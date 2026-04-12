@@ -1,0 +1,300 @@
+/* ======================================================
+   READER CORE STYLES
+====================================================== */
+
+.reader {
+  font-family: var(--font-reader);
+  font-size: var(--reader-font-size, 18px);
+  line-height: var(--reader-line-height, 1.65);
+  color: var(--foreground);
+  background: transparent;
+  max-width: var(--reader-max-width, 70ch);
+  margin-inline: auto;
+}
+
+/* Paragraphs - more airy */
+.reader p,
+.chapter p {
+  margin-bottom: 0.2em;
+  text-indent: 1.5em;
+}
+
+.reader p:first-child,
+.chapter p:first-child {
+  text-indent: 0;
+}
+
+
+.reader p:last-child,
+.chapter p:last-child {
+  margin-bottom: 0;
+}
+
+/* Empty paragraphs */
+.reader p:empty,
+.chapter p:empty {
+  display: none;
+}
+
+/* Remove excessive breaks */
+.reader div br:nth-child(1),
+.chapter div br:nth-child(2),
+.reader div br:nth-last-child(1),
+.chapter div br:nth-last-child(2),
+.chapter div br:nth-last-child(3)
+ {
+  display: none;
+}
+
+.reader div br, .chapter div br {
+  height: 0px;
+}
+
+.reader blockquote, .chapter blockquote div {
+  text-align: start;
+}
+
+/* Headings */
+.reader h1,
+.reader h2,
+.reader h3,
+.reader h4,
+.reader h5,
+.reader h6,
+.chapter h1,
+.chapter h2,
+.chapter h3,
+.chapter h4 {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  text-indent: 0;
+  color: var(--foreground);
+}
+
+.reader h1, .chapter h1 { font-size: 1.5em; }
+.reader h2, .chapter h2 { font-size: 1.3em; }
+.reader h3, .chapter h3 { font-size: 1.15em; }
+.reader h4, .chapter h4 { font-size: 1em; }
+
+/* Links */
+.reader a,
+.chapter a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  transition: color 0.15s ease;
+}
+
+.reader a:hover,
+.chapter a:hover {
+  color: var(--primary-hover);
+}
+
+/* Blockquotes - fixed styling */
+.reader blockquote,
+.chapter blockquote {
+  display: block;
+  border-left: 3px solid var(--primary);
+  padding: 0.5em 0 0.5em 1em;
+  margin: 1em 0 1em 0.5em;
+  background: var(--surface);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.reader blockquote p,
+.chapter blockquote p {
+  text-indent: 0;
+  margin-bottom: 0.4em;
+  font-style: italic;
+  color: var(--foreground);
+}
+
+.reader blockquote p:last-child,
+.chapter blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.reader blockquote div,
+.chapter blockquote div {
+  font-style: italic;
+}
+
+/* Lists */
+.reader ul,
+.reader ol,
+.chapter ul,
+.chapter ol {
+  padding-left: 1.5em;
+  margin-bottom: 0.8em;
+}
+
+.reader li,
+.chapter li {
+  margin-bottom: 0.2em;
+  text-indent: 0;
+}
+
+/* Horizontal rule */
+.reader hr,
+.chapter hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2em 0;
+}
+
+/* Code */
+.reader code,
+.chapter code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--surface-hover);
+  padding: 0.15em 0.35em;
+  border-radius: 3px;
+}
+
+.reader pre,
+.chapter pre {
+  background: var(--surface);
+  padding: 0.8em 1em;
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  margin-bottom: 0.8em;
+  border: 1px solid var(--border);
+}
+
+.reader pre code,
+.chapter pre code {
+  background: none;
+  padding: 0;
+}
+
+/* Images */
+.reader img,
+.chapter img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  margin: 0.8em 0;
+}
+
+/* Tables */
+.reader table,
+.chapter table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.8em;
+  font-size: 0.9em;
+}
+
+.reader th,
+.reader td,
+.chapter th,
+.chapter td {
+  padding: 0.4em 0.6em;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.reader th,
+.chapter th {
+  background: var(--surface);
+  font-weight: 600;
+}
+
+/* Selection */
+.reader ::selection,
+.chapter ::selection {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* ======================================================
+   CHAPTER ANIMATION
+====================================================== */
+
+.chapter {
+  animation: chapterFadeIn 0.25s ease-out forwards;
+}
+
+@keyframes chapterFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ======================================================
+   HIGHLIGHT MARKERS (for notes)
+====================================================== */
+
+.reader-highlight {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    oklch(0.85 0.12 75 / 0.35) 10%,
+    oklch(0.85 0.12 75 / 0.35) 90%,
+    transparent 100%
+  );
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.reader-highlight:hover {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    oklch(0.80 0.14 75 / 0.5) 10%,
+    oklch(0.80 0.14 75 / 0.5) 90%,
+    transparent 100%
+  );
+}
+
+/* Different highlight colors */
+.reader-highlight--yellow {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    oklch(0.90 0.12 90 / 0.35) 10%,
+    oklch(0.90 0.12 90 / 0.35) 90%,
+    transparent 100%
+  );
+}
+
+.reader-highlight--green {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    oklch(0.85 0.12 150 / 0.35) 10%,
+    oklch(0.85 0.12 150 / 0.35) 90%,
+    transparent 100%
+  );
+}
+
+.reader-highlight--blue {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    oklch(0.85 0.12 240 / 0.35) 10%,
+    oklch(0.85 0.12 240 / 0.35) 90%,
+    transparent 100%
+  );
+}
+
+.reader-highlight--pink {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    oklch(0.85 0.12 340 / 0.35) 10%,
+    oklch(0.85 0.12 340 / 0.35) 90%,
+    transparent 100%
+  );
+}

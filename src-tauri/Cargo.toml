@@ -1,0 +1,45 @@
+[package]
+name = "grev"
+version = "0.1.0"
+description = "A Tauri App"
+authors = ["you"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "grev_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1.0.100"
+uuid = { version = "1.3.0", features = ["v4"] }
+encoding_rs = "0.8.35"
+zip = "7.1.0"
+roxmltree = "0.21.1"
+tauri-plugin-dialog = "2"
+tauri-plugin-store = "2"
+image = "0.25.9"
+pdfium-render = { version = "0.8.37", features = ["image"] }
+pulldown-cmark = "0.12.2"
+regex = "1"
+html-escape = "0.2.13"
+lol_html = "2.7.1"
+xmltree = "0.12.0"
+base64 = "0.22.1"
+tokio = "1.49.0"
+tauri-plugin-log = "2"
+kuchiki = "0.8.1"
+quick-xml = "0.39.0"
+docx-rust = "0.1.11"
+

@@ -1,0 +1,1 @@
+type ViewMode = 'chapters' | 'scroll';
