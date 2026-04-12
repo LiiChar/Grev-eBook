@@ -1857,6 +1857,7 @@ dependencies = [
  "html-escape",
  "image",
  "kuchiki",
+ "log",
  "lol_html",
  "pdfium-render",
  "pulldown-cmark",

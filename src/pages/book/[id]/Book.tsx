@@ -129,7 +129,7 @@ async function loadBook() {
 								<Show
 									when={coverUrl()}
 									fallback={
-										<div class='w-full h-full flex items-center justify-center bg-(--surface-hover)'>
+										<div class='w-full h-full flex items-center justify-center rounded-lg bg-(--surface-hover)'>
 											<div class='text-center p-6'>
 												<Icon
 													name='book'

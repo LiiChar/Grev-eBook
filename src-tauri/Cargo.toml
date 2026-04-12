@@ -42,4 +42,5 @@ tauri-plugin-log = "2"
 kuchiki = "0.8.1"
 quick-xml = "0.39.0"
 docx-rust = "0.1.11"
+log = "0.4"
 

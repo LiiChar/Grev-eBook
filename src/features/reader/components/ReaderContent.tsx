@@ -33,7 +33,7 @@ export function ReaderContent(props: ReaderContentProps) {
   return (
 		<div
 			ref={props.contentRef}
-			class='flex-1 overflow-y-auto reader-wrapper'
+			class='flex-1 overflow-y-auto reader-wrapper pt-11'
 			onScroll={props.onScroll}
 		>
 			<article
@@ -49,11 +49,6 @@ export function ReaderContent(props: ReaderContentProps) {
 					<For each={sortedChapters()}>
 						{(chapter, index) => (
 							<div id={`chapter-${index()}`} class='mb-12'>
-								<Show when={chapter.title && hasMultipleChapters()}>
-									<h2 class='text-xl font-semibold mb-6 pb-3 border-b border-[var(--border)]'>
-										{chapter.title}
-									</h2>
-								</Show>
 								<div
 									class='chapter'
 									data-chapter-id={chapter.id}

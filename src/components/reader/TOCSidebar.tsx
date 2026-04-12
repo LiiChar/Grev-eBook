@@ -16,7 +16,14 @@ export const TOCSidebar = ({show, chapters, setShow, toChapter, class: className
   	const ref = useClickOutside(() => setShow(false));
 	return (
 		<Show when={show()}>
-			<aside ref={ref} {...attr} class={'absolute left-1 top-13 rounded-lg bottom-2 w-64 z-20 backdrop-blur-md border-r border-[var(--border)] animate-slide-in-left ' + className}>
+			<aside
+				ref={ref}
+				{...attr}
+				class={
+					'absolute left-1 top-13 rounded-lg bottom-2 w-64 z-20 backdrop-blur-lg bg-(--background)/40 border-r border-[var(--border)] animate-slide-in-left ' +
+					className
+				}
+			>
 				<div class='h-full flex flex-col'>
 					<div class='p-3 border-b border-(--border) flex items-center justify-between'>
 						<h2 class='font-semibold text-sm'>Содержание</h2>

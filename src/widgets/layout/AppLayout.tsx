@@ -1,21 +1,16 @@
-import { createEffect, JSX, onMount } from 'solid-js';
+import { JSX, onMount } from 'solid-js';
 import { loadSettings } from '../../shared/stores/settingsStore';
 import { Toaster } from '../../shared/ui/Toaster';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
-import { useLocation } from '@solidjs/router';
-import { toast } from '../../shared/stores/toastStore';
+import { clearStore } from '@/shared/api/book';
 
 export function AppLayout(props: { children?: JSX.Element }) {
 
-	const location = useLocation();
-
-
   onMount(async () => {
+		await clearStore();
     await loadSettings();
   });
-
-
 
   return (
 		<div class='flex h-full w-full overflow-hidden bg-(--background)'>

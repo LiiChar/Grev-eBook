@@ -19,7 +19,7 @@ export const SettingSidebar = ({class: className, show, setShow, ...attr}: Setti
 				ref={ref}
 				{...attr}
 				class={
-					'absolute right-3.5 rounded-lg top-13 backdrop-blur-lg bottom-2 w-64 z-20  border-l border-(--border) animate-slide-in-right ' +
+					'absolute right-3.5 rounded-lg top-13 backdrop-blur-lg bg-(--background)/40 bottom-2 w-64 z-20  border-l border-(--border) animate-slide-in-right ' +
 					className
 				}
 			>

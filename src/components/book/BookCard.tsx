@@ -133,7 +133,7 @@ export const BookCardGrid = (props: BookCardProps) => {
 			</Show>
 
 			{/* Gradient overlay */}
-			<div class='absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[var(--background)]/80 via-[var(--background)]/40 to-transparent' />
+			<div class='absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[var(--background)]/100 via-[var(--background)]/60 to-transparent' />
 
 			{/* Info overlay */}
 			<div class='absolute inset-x-0 bottom-0 p-3'>
