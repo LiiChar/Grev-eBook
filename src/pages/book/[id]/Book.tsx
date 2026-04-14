@@ -11,6 +11,7 @@ import type { Book, Chapter } from "../../../shared/types/book";
 import { getFileExtension } from "../../../shared/utils/file";
 import { BookLoader } from "../../../shared/ui/Loader";
 import { reader, setReader } from "../../../shared/stores/readerStore";
+import { MobilePadding } from "@/widgets/layout/MobilePadding";
 
 export function BookDetailPage() {
   const params = useParams<{ id: string }>();
@@ -19,6 +20,8 @@ export function BookDetailPage() {
   const [book, setBook] = createSignal<Book | null>(null);
   const [bookmarks, setBookmarks] = createSignal<Bookmark[]>([]);
   const [isLoading, setIsLoading] = createSignal(true);
+	const [showBookmarks, setShowBookmarks] = createSignal(false);
+	
 
   onMount(async () => {
     await loadBook();
@@ -45,6 +48,8 @@ async function loadBook() {
 
 		if ((libraryBook.chapters ?? []).length > 0) {
       setBook(libraryBook);
+			const bms = await getBookmarks(libraryBook.meta.path);
+			setBookmarks(bms);
       return;
     };
 
@@ -71,6 +76,10 @@ async function loadBook() {
 		setIsLoading(false);
 	}
 }
+
+	const toggleShowBookmarks = () => {
+		setShowBookmarks(!showBookmarks());
+	}
 
   async function handleStartReading() {
     try {
@@ -107,15 +116,14 @@ async function loadBook() {
 			<BookLoader loading={isLoading} />
 
 			<Show when={!isLoading() && book()}>
-				<div class='max-w-5xl mx-auto'>
+				<div class='max-w-5xl mx-auto relative'>
 					{/* Back button */}
-					<header data-tauri-drag-region class=' pt-6 pl-6 pr-6'>
+					<header data-tauri-drag-region class=' h-8 sticky top-4'>
 						<button
 							onClick={() => navigate('/')}
-							class='flex items-center gap-2 text-(--foreground-muted) hover:text-(--foreground)  transition-colors'
+							class='flex items-center gap-2 ml-4 mt-4 text-(--foreground-muted) border hover:border-(--foreground)/40 border-(--border) hover:text-(--foreground) p-2 rounded-full backdrop-blur-lg transition-colors'
 						>
-							<Icon name='chevronLeft' size={18} />
-							{/* <span class='text-sm'>Библиотека</span> */}
+							<Icon name='chevronLeft' size={18} class='-ml-0.5' />
 						</button>
 					</header>
 
@@ -123,9 +131,7 @@ async function loadBook() {
 					<div class='grid mt-6 grid-cols-1 md:grid-cols-3 gap-8 pl-6 pr-6'>
 						{/* Cover */}
 						<div class='md:col-span-1'>
-							<div
-								class=' overflow-hidden h-[50vh] w-full flex justify-center items-center'
-							>
+							<div class=' overflow-hidden max-h-[50vh] h-full w-full flex justify-center items-center'>
 								<Show
 									when={coverUrl()}
 									fallback={
@@ -191,15 +197,15 @@ async function loadBook() {
 									<Icon name='bookOpen' size={20} />
 									Читать
 								</GlassButton>
-								<GlassButton size='lg'>
-									<Icon name='bookmark' size={20} />
+								<GlassButton size='lg' onClick={toggleShowBookmarks}>
+									<Icon class={`${showBookmarks() ? 'fill-(--foreground)' : ''} transition-all`} name='bookmark' size={20} />
 									Закладки ({bookmarks().length})
 								</GlassButton>
 							</div>
 
 							{/* Bookmarks preview */}
-							<Show when={bookmarks().length > 0}>
-								<GlassPanel class='space-y-2' padding='md' rounded='xl'>
+							<Show when={bookmarks().length > 0 && showBookmarks()}>
+								<GlassPanel class='space-y-2 ' padding='md' rounded='xl'>
 									<h3 class='font-medium text-sm text-(--foreground-muted) mb-3'>
 										Последние закладки
 									</h3>
@@ -260,6 +266,7 @@ async function loadBook() {
 						</GlassPanel>
 					</div>
 				</div>
+				<MobilePadding/>
 			</Show>
 		</div>
 	);

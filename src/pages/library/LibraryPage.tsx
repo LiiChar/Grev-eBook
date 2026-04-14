@@ -1,18 +1,232 @@
-import { createSignal, onMount, For, Show, createMemo, JSX } from "solid-js";
+import { createSignal, onMount, onCleanup, For, Show, createMemo, Component } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { open } from "@tauri-apps/plugin-dialog";
-import { getBooks, addBooks, addBook, clearStore } from "../../shared/api/book";
+import { getBooks, addBooks, addBook } from "../../shared/api/book";
 import { toast } from "../../shared/stores/toastStore";
 import { GlassButton } from "../../shared/ui/GlassButton";
+import { GlassPanel } from "../../shared/ui/GlassPanel";
 import { Icon } from "../../shared/ui/Icon";
 import { Search } from "../../components/layout/Search";
 import { AddMenu } from "../../components/layout/AddMenu";
 import { Select } from "../../shared/ui/Select";
-import { BookCard, BookCardGrid, BookCardList } from "../../components/book/BookCard";
 import { BookLoader } from "../../shared/ui/Loader";
 import { reader, setReader } from "../../shared/stores/readerStore";
+import { MobilePadding } from "@/widgets/layout/MobilePadding";
+import { Book as BookType } from "../../shared/types/book";
+import { getReadingPosition } from "../../shared/api/reader";
+import { stripHtml } from "../../shared/utils/html";
+import { getFileExtension } from "../../shared/utils/file";
+import { SkeletonLibrary } from "@/features/library/components/Skeleton";
+import { TTS } from "@/widgets/tts/TTS";
 
 type SortKey = "title" | "author" | "recent";
+
+type BookCardBaseProps = {
+	book: BookType;
+	index: number;
+	onClick: () => void;
+};
+
+// Оптимизированная карточка для Grid режима (без переключения viewMode)
+const BookGridCard: Component<BookCardBaseProps> = (props) => {
+	const coverUrl = createMemo(() => {
+		const cover = props.book.meta.cover;
+		if (!cover || cover.length === 0) return null;
+		try {
+			const uint8Array = new Uint8Array(cover);
+			const blob = new Blob([uint8Array], { type: 'image/jpeg' });
+			return URL.createObjectURL(blob);
+		} catch {
+			return null;
+		}
+	});
+
+	const [percent, setPercent] = createSignal(0);
+	let cleanupRef: (() => void) | undefined;
+
+	onMount(async () => {
+		cleanupRef = () => {
+			const url = coverUrl();
+			if (url) URL.revokeObjectURL(url);
+		};
+
+		if (!props.book.chapters?.length) return;
+
+		const pos = await getReadingPosition(props.book.meta.path);
+		if (!pos?.anchor_text) return;
+
+		const chaptersText = props.book.chapters.map((c: any) => stripHtml(c.html));
+		const fullText = chaptersText.join('\n');
+		const anchor = pos.anchor_text.trim();
+		const index = fullText.indexOf(anchor);
+		if (index < 0) return;
+
+		const value = Math.round((index / fullText.length) * 100);
+		setPercent(Math.min(Math.max(value, 1), 100));
+	});
+
+	onCleanup(() => {
+		if (cleanupRef) cleanupRef();
+	});
+
+	return (
+		<div
+			onClick={props.onClick}
+			class={`
+				group relative aspect-[2/3] rounded-xl overflow-hidden cursor-pointer
+				bg-[var(--surface)] hover:bg-[var(--surface-hover)]
+				border border-[var(--border)] hover:border-[var(--border-strong)]
+				transition-all duration-200 hover:scale-[1.02] hover:shadow-xl
+				animate-fade-in
+			`}
+			style={{ 'animation-delay': `${Math.min(props.index, 20) * 0.03}s` }}
+		>
+			{percent() > 0 && (
+				<div class='absolute bottom-0 left-0 right-0 h-[3px] pointer-events-none z-1'>
+					<div
+						class='h-full transition-[width] duration-200'
+						style={{
+							width: `${percent()}%`,
+							background: 'var(--primary)',
+							'border-radius': '0 0 12px 12px',
+						}}
+					/>
+				</div>
+			)}
+			<div class='absolute top-2 text-sm bg-(--background) rounded-md right-2 p-1 z-10 border-[1px] border-(--surface)'>
+				{getFileExtension(props.book.meta.path)}
+			</div>
+			<Show
+				when={coverUrl()}
+				fallback={
+					<div class='absolute inset-0 flex items-center justify-center p-4'>
+						<div class='text-center'>
+							<Icon name='book' size={32} class='mx-auto mb-2 text-[var(--foreground-muted)]' />
+							<p class='text-xs text-[var(--foreground-muted)] line-clamp-3'>
+								{props.book.meta.title}
+							</p>
+						</div>
+					</div>
+				}
+			>
+				<img
+					src={coverUrl()!}
+					alt={props.book.meta.title}
+					class='absolute inset-0 w-full h-full object-cover'
+					loading='lazy'
+				/>
+			</Show>
+			<div class='absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[var(--background)]/100 via-[var(--background)]/60 to-transparent' />
+			<div class='absolute inset-x-0 bottom-0 p-3'>
+				<h3 class='text-white font-medium text-sm line-clamp-2 drop-shadow-lg'>
+					{props.book.meta.title || 'Без названия'}
+				</h3>
+				<Show when={props.book.meta.author}>
+					<p class='text-white/70 text-xs mt-1 truncate drop-shadow'>
+						{props.book.meta.author}
+					</p>
+				</Show>
+			</div>
+		</div>
+	);
+};
+
+// Оптимизированная карточка для List режима (без переключения viewMode)
+const BookListCard: Component<BookCardBaseProps> = (props) => {
+	const coverUrl = createMemo(() => {
+		const cover = props.book.meta.cover;
+		if (!cover || cover.length === 0) return null;
+		try {
+			const uint8Array = new Uint8Array(cover);
+			const blob = new Blob([uint8Array], { type: 'image/jpeg' });
+			return URL.createObjectURL(blob);
+		} catch {
+			return null;
+		}
+	});
+
+	const [percent, setPercent] = createSignal(0);
+	let cleanupRef: (() => void) | undefined;
+
+	onMount(async () => {
+		cleanupRef = () => {
+			const url = coverUrl();
+			if (url) URL.revokeObjectURL(url);
+		};
+
+		if (!props.book.chapters?.length) return;
+
+		const pos = await getReadingPosition(props.book.meta.path);
+		if (!pos?.anchor_text) return;
+
+		const chaptersText = props.book.chapters.map((c: any) => stripHtml(c.html));
+		const fullText = chaptersText.join('\n');
+		const anchor = pos.anchor_text.trim();
+		const index = fullText.indexOf(anchor);
+		if (index < 0) return;
+
+		const value = Math.round((index / fullText.length) * 100);
+		setPercent(Math.min(Math.max(value, 1), 100));
+	});
+
+	onCleanup(() => {
+		if (cleanupRef) cleanupRef();
+	});
+
+	return (
+		<GlassPanel
+			class={`
+				flex items-center gap-4 cursor-pointer
+				hover:bg-[var(--surface-hover)] transition-all duration-150
+				animate-fade-in
+			`}
+			padding='sm'
+			rounded='lg'
+			onClick={props.onClick}
+		>
+			{percent() > 0 && (
+				<div class='absolute inset-0 rounded-xl z-[5] pointer-events-none overflow-hidden'>
+					<div
+						class='h-full transition-[width] duration-200 bg-(--primary)/10'
+						style={{ width: `${percent()}%` }}
+					/>
+				</div>
+			)}
+			<div class='w-12 h-16 rounded-md overflow-hidden bg-[var(--surface-hover)] shrink-0 relative z-10'>
+				<Show
+					when={coverUrl()}
+					fallback={
+						<div class='w-full h-full flex items-center justify-center'>
+							<Icon name='book' size={20} class='text-[var(--foreground-muted)]' />
+						</div>
+					}
+				>
+					<img
+						onError={(e) => {
+							const target = e.target as HTMLImageElement;
+							target.style.display = 'none';
+						}}
+						src={coverUrl()!}
+						alt=''
+						class='w-full h-full object-cover'
+					/>
+				</Show>
+			</div>
+			<div class='flex-1 min-w-0 relative z-10'>
+				<h3 class='font-medium truncate'>
+					{props.book.meta.title || 'Без названия'}
+				</h3>
+				<p class='text-sm text-[var(--foreground-muted)] truncate'>
+					{props.book.meta.author || 'Неизвестный автор'}
+				</p>
+			</div>
+			<span class='text-xs text-[var(--foreground-muted)] shrink-0 relative z-10'>
+				{props.book.chapters?.length ?? 0} глав
+			</span>
+			<Icon name='chevronRight' size={18} class='text-[var(--foreground-muted)] relative z-10' />
+		</GlassPanel>
+	);
+};
 
 export function LibraryPage() {
   const navigate = useNavigate();
@@ -20,23 +234,30 @@ export function LibraryPage() {
   const [searchQuery, setSearchQuery] = createSignal("");
   const [sortKey, setSortKey] = createSignal<SortKey>("title");
   const [viewMode, setViewMode] = createSignal<"grid" | "list">("grid");
+  let isMounted = true;
 
   onMount(async () => {
     await loadBooks();
   });
 
+  onCleanup(() => {
+    isMounted = false;
+  });
+
   async function loadBooks() {
     setIsLoading(true);
     try {
-      if (reader.books.length == 0) {
-        const data = await getBooks();
+      const data = await getBooks();
+      if (isMounted) {
         setReader({ books: data });
       }
     } catch (err) {
       console.error("Failed to load books:", err);
       toast.error("Не удалось загрузить библиотеку");
     } finally {
-      setIsLoading(false);
+      if (isMounted) {
+        setIsLoading(false);
+      }
     }
   }
 
@@ -46,7 +267,8 @@ export function LibraryPage() {
 
     try {
       const newBooks = await addBooks(folder);
-      setReader({ books: newBooks });
+      // Добавляем новые книги к существующим, а не заменяем все
+      setReader({ books: [...reader.books, ...newBooks] });
       toast.success(`Добавлено книг: ${newBooks.length}`);
     } catch (err) {
       console.error("Failed to add books:", err);
@@ -78,7 +300,10 @@ export function LibraryPage() {
   }
 
   const filteredBooks = createMemo(() => {
-    let result = [...reader.books];
+    const books = reader.books;
+    if (!books || books.length === 0) return [];
+    
+    let result = [...books];
 
     // Filter by search
     const query = searchQuery().toLowerCase().trim();
@@ -93,7 +318,7 @@ export function LibraryPage() {
     // Sort
     switch (sortKey()) {
       case "title":
-        result.sort((a, b) => a.meta.title.localeCompare(b.meta.title));
+        result.sort((a, b) => (a.meta.title ?? "").localeCompare(b.meta.title ?? ""));
         break;
       case "author":
         result.sort((a, b) =>
@@ -101,7 +326,6 @@ export function LibraryPage() {
         );
         break;
       case "recent":
-        // Keep original order (most recent additions last in array)
         result.reverse();
         break;
     }
@@ -112,6 +336,7 @@ export function LibraryPage() {
   return (
 		<div class='h-full flex flex-col overflow-hidden'>
 			{/* Header */}
+			<TTS/>
 			<header
 				data-tauri-drag-region
 				class='shrink-0 px-6 py-4 border-b border-(--border) bg-(--background)'
@@ -158,7 +383,10 @@ export function LibraryPage() {
 									<Icon name='listBullet' size={18} />
 								</button>
 							</div>
-						<AddMenu onAddFile={handleAddFile} onAddFolder={handleAddFolder} />
+							<AddMenu
+								onAddFile={handleAddFile}
+								onAddFolder={handleAddFolder}
+							/>
 						</div>
 
 						{/* Add buttons */}
@@ -168,7 +396,7 @@ export function LibraryPage() {
 
 			{/* Content */}
 			<div class='flex-1 overflow-y-auto p-6'>
-				<BookLoader loading={isLoading} />
+				<SkeletonLibrary loading={isLoading} />
 
 				<Show when={!isLoading() && filteredBooks().length === 0}>
 					<div class='flex flex-col items-center justify-center h-64 gap-4'>
@@ -190,25 +418,36 @@ export function LibraryPage() {
 				</Show>
 
 				<Show when={!isLoading() && filteredBooks().length > 0}>
-					<div
-						class={
-							viewMode() === 'grid'
-								? 'grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4'
-								: 'flex flex-col gap-2'
+					<Show
+						when={viewMode() === 'grid'}
+						fallback={
+							<div class='flex flex-col gap-2'>
+								<For each={filteredBooks()} fallback={null}>
+									{(book, index) => (
+										<BookListCard
+											book={book}
+											index={index()}
+											onClick={() => navigate(`/book/${book.id}`)}
+										/>
+									)}
+								</For>
+							</div>
 						}
 					>
-						<For each={filteredBooks()}>
-							{(book, index) => (
-								<BookCard
-									viewMode={viewMode}
-									book={book}
-									index={index()}
-									onClick={() => navigate(`/book/${book.id}`)}
-								/>
-							)}
-						</For>
-					</div>
+						<div class='grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-4'>
+							<For each={filteredBooks()} fallback={null}>
+								{(book, index) => (
+									<BookGridCard
+										book={book}
+										index={index()}
+										onClick={() => navigate(`/book/${book.id}`)}
+									/>
+								)}
+							</For>
+						</div>
+					</Show>
 				</Show>
+				<MobilePadding />
 			</div>
 		</div>
 	);

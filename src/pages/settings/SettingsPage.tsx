@@ -1,4 +1,4 @@
-import { createSignal, For, Show } from 'solid-js';
+import { createSignal, For, Show, onMount, onCleanup } from 'solid-js';
 import {
   settings,
   setTheme,
@@ -13,7 +13,6 @@ import {
 import { GlassPanel } from '../../shared/ui/GlassPanel';
 import { GlassButton } from '../../shared/ui/GlassButton';
 import { Icon } from '../../shared/ui/Icon';
-import type { Theme } from '../../shared/api/settings';
 import { ThemeSelector } from '../../components/layout/ThemeSelector';
 import { ToggleSwitch } from '../../shared/ui/ToggleSwitch';
 import { Hotkey } from '../../shared/ui/Hotkey';
@@ -22,6 +21,8 @@ type SettingsSection = 'general' | 'reader' | 'ui' | 'hotkeys';
 
 export function SettingsPage() {
   const [activeSection, setActiveSection] = createSignal<SettingsSection>('general');
+  const [isDropdownOpen, setIsDropdownOpen] = createSignal(false);
+  let dropdownRef: HTMLDivElement | undefined;
 
   const sections: { id: SettingsSection; label: string; icon: 'settings' | 'book' | 'adjustments' | 'listBullet' }[] = [
     { id: 'general', label: 'Общие', icon: 'settings' },
@@ -30,35 +31,84 @@ export function SettingsPage() {
     { id: 'hotkeys', label: 'Горячие клавиши', icon: 'listBullet' },
   ];
 
+  const currentSection = () => sections.find(s => s.id === activeSection())!;
+
+  // Закрытие меню при клике вне его
+  const handleClickOutside = (e: MouseEvent) => {
+    if (dropdownRef && !dropdownRef.contains(e.target as Node)) {
+      setIsDropdownOpen(false);
+    }
+  };
+
+  onMount(() => {
+    document.addEventListener('click', handleClickOutside);
+  });
+
+  onCleanup(() => {
+    document.removeEventListener('click', handleClickOutside);
+  });
+
   return (
-		<div class='h-full flex overflow-hidden'>
-			{/* Sidebar */}
-			<nav class='w-52 shrink-0 border-r border-[var(--border)] p-3 space-y-1'>
-				<h1 class='text-lg font-semibold mb-4 px-3'>Настройки</h1>
-				<For each={sections}>
-					{section => (
-						<button
-							onClick={() => setActiveSection(section.id)}
-							class={`
-                w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm
-                transition-colors text-left
-                ${
-									activeSection() === section.id
-										? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
-										: 'hover:bg-[var(--surface-hover)]'
-								}
-              `}
-						>
-							<Icon name={section.icon} size={18} />
-							{section.label}
-						</button>
-					)}
-				</For>
-			</nav>
+		<div class='h-full flex flex-col overflow-hidden'>
+			{/* Header с выпадающим меню */}
+			<header class='shrink-0 border-b border-[var(--border)] p-4'>
+				<div class='max-w-3xl mx-auto'>
+					<h1 class='flex items-center gap-2 '>
+						<Icon name='settings' size={20} class='sm:hidden' />
+						<span class='hidden sm:inline'>Настройки</span>
+					</h1>
+				</div>
+			</header>
 
 			{/* Content */}
-			<main class='flex-1 overflow-y-auto p-6 '>
-				<div class='max-w-2xl'>
+			<main class='flex-1 overflow-y-auto p-4 md:p-6'>
+				<div class='relative mb-4' ref={dropdownRef}>
+					<button
+						onClick={e => {
+							e.stopPropagation();
+							setIsDropdownOpen(!isDropdownOpen());
+						}}
+						class='w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-hover)] transition-colors border border-[var(--border)] text-left'
+					>
+						<div class='flex items-center gap-3'>
+							<Icon name={currentSection().icon} size={18} />
+							<span class='text-sm font-medium'>{currentSection().label}</span>
+						</div>
+						<Icon
+							name='chevronDown'
+							size={16}
+							class={`transition-transform ${isDropdownOpen() ? 'rotate-180' : ''}`}
+						/>
+					</button>
+
+					<Show when={isDropdownOpen()}>
+						<div class='absolute top-full left-0 right-0 mt-1 bg-[var(--surface)] border border-[var(--border)] backdrop-blur-lg rounded-lg shadow-lg z-50 overflow-hidden'>
+							<For each={sections}>
+								{section => (
+									<button
+										onClick={() => {
+											setActiveSection(section.id);
+											setIsDropdownOpen(false);
+										}}
+										class={`
+                        w-full flex items-center gap-3 px-4 py-2.5 text-sm
+                        transition-colors text-left
+                        ${
+													activeSection() === section.id
+														? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
+														: 'hover:bg-[var(--surface-hover)]'
+												}
+                      `}
+									>
+										<Icon name={section.icon} size={18} />
+										{section.label}
+									</button>
+								)}
+							</For>
+						</div>
+					</Show>
+				</div>
+				<div class='max-w-3xl mx-auto space-y-6'>
 					{/* General */}
 					<Show when={activeSection() === 'general'}>
 						<SettingsGroup title='Общие настройки'>
@@ -67,7 +117,10 @@ export function SettingsPage() {
 								label='Тема оформления'
 								description='Выберите цветовую схему приложения'
 							>
-								<ThemeSelector onChange={(theme) => setTheme(theme)} value={settings.general.theme} />
+								<ThemeSelector
+									onChange={theme => setTheme(theme)}
+									value={settings.general.theme}
+								/>
 							</SettingRow>
 						</SettingsGroup>
 					</Show>
@@ -75,12 +128,41 @@ export function SettingsPage() {
 					{/* Reader */}
 					<Show when={activeSection() === 'reader'}>
 						<SettingsGroup title='Настройки чтения'>
+							{/* Reader mode */}
+							<SettingRow
+								label='Режим чтения'
+								description='Выберите режим отображения'
+							>
+								<div class='flex items-center gap-1 p-0.5 rounded-lg w-full bg-[var(--surface-hover)]'>
+									<button
+										onClick={() => setReaderMode('scroll')}
+										class={`px-3 py-1.5 w-full text-xs rounded-md transition-colors ${
+											settings.reader.mode === 'scroll'
+												? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
+												: 'hover:bg-[var(--surface-active)]'
+										}`}
+									>
+										Свиток
+									</button>
+									<button
+										onClick={() => setReaderMode('chapters')}
+										class={`px-3 py-1.5 w-full text-xs rounded-md transition-colors ${
+											settings.reader.mode === 'chapters'
+												? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
+												: 'hover:bg-[var(--surface-active)]'
+										}`}
+									>
+										Главы
+									</button>
+								</div>
+							</SettingRow>
+
 							{/* Font size */}
 							<SettingRow
 								label='Размер шрифта'
 								description={`${settings.reader.font_size}px`}
 							>
-								<div class='flex items-center gap-3'>
+								<div class='flex items-center gap-3 w-full sm:w-auto'>
 									<GlassButton
 										size='icon'
 										variant='ghost'
@@ -94,7 +176,7 @@ export function SettingsPage() {
 										max='32'
 										value={settings.reader.font_size}
 										onInput={e => setFontSize(parseInt(e.currentTarget.value))}
-										class='w-28'
+										class='flex-1 sm:w-28'
 									/>
 									<GlassButton
 										size='icon'
@@ -111,7 +193,7 @@ export function SettingsPage() {
 								label='Межстрочный интервал'
 								description={settings.reader.line_height.toFixed(1)}
 							>
-								<div class='flex items-center gap-3'>
+								<div class='flex items-center gap-3 w-full sm:w-auto'>
 									<GlassButton
 										size='icon'
 										variant='ghost'
@@ -130,7 +212,7 @@ export function SettingsPage() {
 										onInput={e =>
 											setLineHeight(parseFloat(e.currentTarget.value))
 										}
-										class='w-28'
+										class='flex-1 sm:w-28'
 									/>
 									<GlassButton
 										size='icon'
@@ -149,7 +231,7 @@ export function SettingsPage() {
 								label='Ширина колонки'
 								description={`${settings.reader.column_width}px`}
 							>
-								<div class='flex items-center gap-3'>
+								<div class='flex items-center gap-3 w-full sm:w-auto'>
 									<GlassButton
 										size='icon'
 										variant='ghost'
@@ -168,7 +250,7 @@ export function SettingsPage() {
 										onInput={e =>
 											setColumnWidth(parseInt(e.currentTarget.value))
 										}
-										class='w-28'
+										class='flex-1 sm:w-28'
 									/>
 									<GlassButton
 										size='icon'
@@ -209,13 +291,11 @@ export function SettingsPage() {
 
 							<SettingRow
 								label='Режим без отвлечений'
-								description='Минимальный интерфейс'
-
+								description='Минимальный интерфейс при чтении'
 							>
 								<ToggleSwitch
 									checked={settings.ui.distraction_free}
 									onChange={setDistractionFree}
-									
 								/>
 							</SettingRow>
 						</SettingsGroup>

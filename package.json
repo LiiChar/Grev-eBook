@@ -21,9 +21,11 @@
     "@tauri-apps/plugin-log": "~2",
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-store": "~2",
+    "clsx": "^2.1.1",
     "pdf-parse": "^2.4.5",
     "pdf.js-extract": "^0.2.1",
     "solid-js": "^1.9.3",
+    "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.1.18",
     "virtua": "^0.48.3"
   },

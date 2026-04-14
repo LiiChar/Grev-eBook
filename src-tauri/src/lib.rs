@@ -3,17 +3,19 @@ mod core;
 mod state;
 
 use std::sync::Arc;
-use std::sync::Mutex;
+use std::sync::RwLock;
 use tauri::Manager;
 
 use commands::{
-    add_book, add_bookmark, add_books, add_note, clear_store, delete_bookmark, delete_note,
-    get_book, get_bookmarks, get_books, get_notes, get_reader_state, get_settings, open_book,
-    save_reading_position, get_reading_position, set_current_book, update_note, update_settings, get_bookmark
+    add_book, add_bookmark, add_books, add_note, clear_chapter_cache, clear_store,
+    delete_bookmark, delete_note, get_book, get_bookmarks, get_books, get_cache_stats,
+    get_notes, get_reader_state, get_settings, open_book, save_reading_position,
+    get_reading_position, set_current_book, update_note, update_settings, get_bookmark,
 };
 use state::AppState;
 use tauri_plugin_store::StoreExt;
 
+use core::cache::ChapterCache;
 use core::storage::{load_state, migrate_if_needed, STORE_PATH};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -29,7 +31,20 @@ pub fn run() {
             migrate_if_needed(&store);
             let state = load_state(&store);
 
-            app.manage(Arc::new(Mutex::new(state)));
+            // Use RwLock for concurrent read-heavy access
+            app.manage(Arc::new(RwLock::new(state)));
+
+            // Initialize chapter cache
+            let cache_dir = app.path().app_cache_dir()
+                .unwrap_or_else(|_| std::path::PathBuf::from("cache"));
+            let cache_dir = cache_dir.join("chapters");
+            let cache = ChapterCache::new(cache_dir);
+
+            // Prune old cache entries (older than 30 days)
+            let mut cache = cache;
+            cache.prune(30 * 24 * 60 * 60); // 30 days in seconds
+            
+            app.manage(Arc::new(RwLock::new(cache)));
 
             Ok(())
         })
@@ -43,6 +58,8 @@ pub fn run() {
             add_books,
             add_book,
             clear_store,
+            clear_chapter_cache,
+            get_cache_stats,
             get_reader_state,
             set_current_book,
             save_reading_position,
@@ -56,20 +73,12 @@ pub fn run() {
             delete_note,
             get_notes,
             get_settings,
-            update_settings
+            update_settings,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
-        .run(|app, event| match event {
-            tauri::RunEvent::ExitRequested { api: _, .. } => {
-                // Сохраняем состояние при выходе
-                // let store = app.store(STORE_PATH).expect("Failed to open store");
-                // let state: tauri::State<'_, Mutex<AppState>> = app.state::<Mutex<AppState>>();
-                // let state = state.lock().unwrap();
-                // if let Err(err) = save_state(&store, &state) {
-                //     eprintln!("Failed to save store: {}", err);
-                // }
-            }
-            _ => {}
+        .run(|_app, _event| {
+            // State is saved on position save commands
+            // No need to save on exit since position is debounced
         });
 }

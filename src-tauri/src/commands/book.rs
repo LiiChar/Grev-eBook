@@ -1,16 +1,16 @@
 use std::{
     path::Path,
-    sync::{Arc, Mutex},
+    sync::{Arc, RwLock},
 };
 
-use anyhow::Result;
-use tauri::State;
+use tauri::{State};
 use tauri_plugin_log::log;
 use tauri_plugin_store::StoreExt;
 
 use crate::{
     core::{
         book::model::Book,
+        cache::ChapterCache,
         formats::{get_book as gBook, get_books as gBooks},
         storage::{save_state, STORE_PATH},
     },
@@ -18,142 +18,182 @@ use crate::{
 };
 
 #[tauri::command]
+pub async fn open_book(
+    app: tauri::AppHandle,
+    state: State<'_, Arc<RwLock<AppState>>>,
+    path: String,
+) -> Result<Book, String> {
+    let path = Path::new(&path);
+
+    // --- Fast path: check if chapters already in memory ---
+    {
+        let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
+        if let Some(existing) = state.book.books.iter().find(|b| b.meta.path == path.to_string_lossy()) {
+            if existing.chapters.as_ref().map_or(false, |c| !c.is_empty()) {
+                return Ok(existing.clone());
+            }
+        }
+    }
+
+    // --- Load book ---
+    let loaded_book = gBook(path, Some(true))
+        .map_err(|e| format!("Failed to load book from path: {}", e))?;
+
+    // --- Update state ---
+    {
+        let mut state = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
+        let book_index = state.book.books.iter()
+            .position(|b| b.meta.path == loaded_book.meta.path);
+
+        match book_index {
+            Some(idx) => {
+                let mut updated = loaded_book.clone();
+                updated.id = state.book.books[idx].id.clone();
+                state.book.books[idx] = updated;
+            }
+            None => {
+                state.book.books.push(loaded_book.clone());
+            }
+        }
+    }
+
+    // --- Persist to disk (non-blocking) ---
+    let state_clone = {
+        let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
+        state.clone()
+    };
+
+    let app_clone = app.clone();
+    tauri::async_runtime::spawn(async move {
+        if let Ok(store) = app_clone.store(STORE_PATH) {
+            let _ = save_state(&store, &state_clone);
+        }
+    });
+
+    Ok(loaded_book)
+}
+
+#[tauri::command]
 pub async fn add_books(
     app: tauri::AppHandle,
-    state: State<'_, Arc<Mutex<AppState>>>,
+    state: State<'_, Arc<RwLock<AppState>>>,
     path: &Path,
 ) -> Result<Vec<Book>, String> {
-    let books = gBooks(&path)
-        .map_err(|e| e.to_string())
-        .expect("Failed load books by path");
-    let mut state = state.lock().unwrap();
+    let path = path.to_path_buf();
+    let books = tauri::async_runtime::spawn_blocking(move || {
+        gBooks(&path).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("Task panicked: {}", e))??;
+
+    let mut state = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
     state.book.books = books.clone();
-    let store = app.store(STORE_PATH).expect("Failed to open store");
-    save_state(&store, &state).map_err(|e| e.to_string())?;
+
+    // Persist asynchronously
+    let state_clone = state.clone();
+    let app_clone = app.clone();
+    tauri::async_runtime::spawn(async move {
+        if let Ok(store) = app_clone.store(STORE_PATH) {
+            let _ = save_state(&store, &state_clone);
+        }
+    });
+
     Ok(books)
 }
 
 #[tauri::command]
 pub async fn add_book(
     app: tauri::AppHandle,
-    state: State<'_, Arc<Mutex<AppState>>>,
+    state: State<'_, Arc<RwLock<AppState>>>,
     path: &Path,
 ) -> Result<Vec<Book>, String> {
-    let book = gBook(&path, Some(false))
-        .map_err(|e| e.to_string())
-        .expect("Failed load books by path");
+    let path = path.to_path_buf();
+    let book = tauri::async_runtime::spawn_blocking(move || {
+        gBook(&path, Some(false)).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("Task panicked: {}", e))??;
 
-    let mut state = state.lock().unwrap();
-    let mut books = state.book.books.clone();
-    books.push(book);
-    state.book.books = books.clone();
-    let store = app.store(STORE_PATH).expect("Failed to open store");
-    save_state(&store, &state).map_err(|e| e.to_string())?;
-    Ok(books)
+    let mut state = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
+    state.book.books.push(book.clone());
+
+    let state_clone = state.clone();
+    let app_clone = app.clone();
+    tauri::async_runtime::spawn(async move {
+        if let Ok(store) = app_clone.store(STORE_PATH) {
+            let _ = save_state(&store, &state_clone);
+        }
+    });
+
+    Ok(state.book.books.clone())
 }
 
 #[tauri::command]
-pub async fn open_book(
-    app: tauri::AppHandle,
-    state: State<'_, Arc<Mutex<AppState>>>,
-    path: &Path
-) -> Result<Book, String> {
-    let mut state = state.lock().unwrap();
-    
-    // Находим индекс книги в списке
-    let book_index = state.book.books.iter()
-        .position(|b| *b.meta.path == *path);
-    
-    let mut book = match book_index {
-        // Книга уже есть в библиотеке
-        Some(idx) => {
-            let existing_book = &state.book.books[idx];
-            
-            // Если у книги уже есть главы, возвращаем ее
-            if existing_book.chapters.as_ref().map_or(false, |c| !c.is_empty()) {
-                existing_book.clone()
-            } else {
-                // Иначе загружаем книгу заново
-                let mut loaded_book = gBook(path, Some(true))
-                    .map_err(|e| format!("Failed to load book from path: {}", e))?;
-                
-                // Сохраняем ID существующей книги
-                loaded_book.id = existing_book.id.clone();
-                loaded_book
-            }
-        }
-        // Новая книга
-        None => {
-            gBook(path, Some(true))
-                .map_err(|e| format!("Failed to load book from path: {}", e))?
-        }
-    };
-    
-    // Обновляем или добавляем книгу в список
-    match book_index {
-        Some(idx) => {
-            // Обновляем существующую книгу
-            state.book.books[idx] = book.clone();
-        }
-        None => {
-            // Добавляем новую книгу
-            state.book.books.push(book.clone());
-        }
-    }
-    
-    // Сохраняем состояние
-    let store = app.store(STORE_PATH)
-        .map_err(|e| format!("Failed to open store: {}", e))?;
-    save_state(&store, &state)
-        .map_err(|e| format!("Failed to save state: {}", e))?;
-    
-    Ok(book)
-}
-
-#[tauri::command]
-pub async fn get_books(state: State<'_, Arc<Mutex<AppState>>>) -> Result<Vec<Book>, String> {
-    let books = state.lock().unwrap().book.books.clone();
-    Ok(books)
+pub async fn get_books(state: State<'_, Arc<RwLock<AppState>>>) -> Result<Vec<Book>, String> {
+    let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
+    Ok(state.book.books.clone())
 }
 
 #[tauri::command]
 pub async fn get_book(
-    state: State<'_, Arc<Mutex<AppState>>>,
+    state: State<'_, Arc<RwLock<AppState>>>,
     path: String,
 ) -> Result<Book, String> {
-    let books = state.lock().unwrap().book.books.clone();
-    let book = books.into_iter().find(|b| b.meta.path == path);
-    let find_book = match book {
-        Some(old_book) => old_book,
-        None => gBook(&Path::new(&path), Some(false))
-            .map_err(|e| e.to_string())
-            .expect("Failed load books by path"),
-    };
-
-    Ok(find_book)
+    let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
+    state.book.books.iter()
+        .find(|b| b.meta.path == path)
+        .cloned()
+        .or_else(|| {
+            gBook(Path::new(&path), Some(false))
+                .map_err(|e| e.to_string())
+                .ok()
+        })
+        .ok_or_else(|| "Book not found".to_string())
 }
 
 #[tauri::command]
 pub async fn clear_store(
     app: tauri::AppHandle,
-    state: State<'_, Arc<Mutex<AppState>>>,
+    state: State<'_, Arc<RwLock<AppState>>>,
+    cache: State<'_, Arc<RwLock<ChapterCache>>>,
 ) -> Result<(), String> {
-    let mut state = state.lock().unwrap();
-    state.book.books.clear();
-    state.bookmarks.items.clear();
-    state.reader.sessions.clear();
-    state.notes.items.clear();
-    log::info!("Store cleared");
-    let store = app.store(STORE_PATH).expect("Failed to open store");
+    {
+        let mut state = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
+        state.book.books.clear();
+        state.bookmarks.items.clear();
+        state.reader.sessions.clear();
+        state.notes.items.clear();
+    }
+
+    // Clear chapter cache
+    {
+        let mut cache = cache.write().map_err(|e| format!("Cache lock poisoned: {}", e))?;
+        cache.clear();
+    }
+
+    log::info!("Store and cache cleared");
+    let store = app.store(STORE_PATH).map_err(|e| format!("Failed to open store: {}", e))?;
+    let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
     save_state(&store, &state).map_err(|e| e.to_string())?;
     Ok(())
 }
 
-// #[tauri::command]
-// fn get_chapter(book_id: String, chapter_id: String) ->
+/// Get cache statistics
+#[tauri::command]
+pub async fn get_cache_stats(
+    cache: State<'_, Arc<RwLock<ChapterCache>>>,
+) -> Result<crate::core::cache::CacheStats, String> {
+    let cache = cache.read().map_err(|e| format!("Lock poisoned: {}", e))?;
+    let stats = cache.get_stats();
+    Ok(stats)
+}
 
-// #[tauri::command]
-// fn save_position(book_id: String, pos: ReadingPosition)
-
-// #[tauri::command]
-// fn add_bookmark(book_id: String, bookmark: Bookmark)
+/// Clear chapter cache
+#[tauri::command]
+pub async fn clear_chapter_cache(
+    cache: State<'_, Arc<RwLock<ChapterCache>>>,
+) -> Result<(), String> {
+    let mut cache = cache.write().map_err(|e| format!("Lock poisoned: {}", e))?;
+    cache.clear();
+    Ok(())
+}

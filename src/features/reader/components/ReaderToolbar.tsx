@@ -15,8 +15,6 @@ export interface ReaderToolbarProps {
   isFullscreen: boolean;
   onNavigateBack: () => void;
   onToggleToc: () => void;
-  onAddBookmark: () => void;
-  onAddNote: () => void;
   onToggleSettings: () => void;
   onToggleFullscreen: () => void;
 }
@@ -51,22 +49,7 @@ export function ReaderToolbar(props: ReaderToolbarProps) {
 						<Icon name='listBullet' size={18} />
 					</GlassButton>
 				</Show>
-				<GlassButton
-					size='icon'
-					variant='ghost'
-					onClick={props.onAddBookmark}
-					title='Закладка (B)'
-				>
-					<Icon name='bookmark' size={18} />
-				</GlassButton>
-				<GlassButton
-					size='icon'
-					variant='ghost'
-					onClick={props.onAddNote}
-					title='Заметки (N)'
-				>
-					<Icon name='note' size={18} />
-				</GlassButton>
+
 				<GlassButton
 					size='icon'
 					variant='ghost'

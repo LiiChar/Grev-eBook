@@ -8,13 +8,12 @@ import { clearStore } from '@/shared/api/book';
 export function AppLayout(props: { children?: JSX.Element }) {
 
   onMount(async () => {
-		await clearStore();
     await loadSettings();
   });
 
   return (
 		<div class='flex h-full w-full overflow-hidden bg-(--background)'>
-			<Sidebar/>
+			<Sidebar />
 
 			<main class='flex-1 h-full overflow-hidden flex flex-col md:pb-0 '>
 				{props.children}

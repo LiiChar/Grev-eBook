@@ -70,7 +70,14 @@ export function getReadingAnchor(
 }
 
 export function scrollToAnchor(root: HTMLElement, anchor: ReadingPosition) {
-	const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+	// Создаем walker который включает текст внутри <mark> элементов
+	const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+		acceptNode(node) {
+			// Принимаем все текстовые узлы включая те что внутри <mark>
+			if (!node.textContent?.trim()) return NodeFilter.FILTER_REJECT;
+			return NodeFilter.FILTER_ACCEPT;
+		},
+	});
 
 	let bestMatch: { node: Text; index: number } | null = null;
 
@@ -78,37 +85,60 @@ export function scrollToAnchor(root: HTMLElement, anchor: ReadingPosition) {
 		const node = walker.currentNode as Text;
 		const content = node.textContent ?? '';
 
-		// 1️⃣ Точное совпадение
+		// 1️⃣ Точное совпадение anchor_text
 		const idx = content.indexOf(anchor.anchor_text);
 		if (idx !== -1) {
 			bestMatch = { node, index: idx };
 			break;
 		}
 
-		// 2️⃣ Контекстное совпадение
+		// 2️⃣ Контекстное совпадение по before/after
 		if (anchor.before && anchor.after) {
-			if (content.includes(anchor.before) && content.includes(anchor.after)) {
+			const beforeIdx = content.indexOf(anchor.before);
+			const afterIdx = content.indexOf(anchor.after);
+			if (beforeIdx !== -1 && afterIdx !== -1) {
 				bestMatch = {
 					node,
-					index: content.indexOf(anchor.before),
+					index: beforeIdx,
 				};
+				// Не break, продолжаем искать лучшее совпадение
+			}
+		}
+		
+		// 3️⃣ Фолбэк: частичное совпадение anchor_text (если текст разбит <mark>)
+		if (!bestMatch && anchor.anchor_text) {
+			// Пробуем найти часть anchor_text (первые 40 символов)
+			const shortAnchor = anchor.anchor_text.slice(0, Math.min(40, anchor.anchor_text.length));
+			const shortIdx = content.indexOf(shortAnchor);
+			if (shortIdx !== -1) {
+				bestMatch = { node, index: shortIdx };
 			}
 		}
 	}
 
 	if (!bestMatch) {
+		console.warn('Anchor not found:', anchor.anchor_text);
 		root.scrollTo({ top: 0 });
 		return false;
 	}
 
+	// Создаем range для определения позиции скролла
 	const range = document.createRange();
-	range.setStart(bestMatch.node, bestMatch.index);
-	range.setEnd(bestMatch.node, bestMatch.index + anchor.anchor_text.length);
+	try {
+		const matchLength = Math.min(anchor.anchor_text.length, bestMatch.node.length - bestMatch.index);
+		range.setStart(bestMatch.node, bestMatch.index);
+		range.setEnd(bestMatch.node, Math.min(bestMatch.index + matchLength, bestMatch.node.length));
+	} catch (e) {
+		console.error('Failed to set range:', e);
+		root.scrollTo({ top: 0 });
+		return false;
+	}
 
 	const rect = range.getBoundingClientRect();
+	const targetScroll = rect.top + root.scrollTop - 120;
 
 	root.scrollTo({
-		top: rect.top + root.scrollTop - 120,
+		top: targetScroll,
 		behavior: 'smooth',
 	});
 

@@ -8,8 +8,7 @@ import { createSignal } from 'solid-js';
 import { openBook } from '../../../shared/api/book';
 import { getBookmarks } from '../../../shared/api/bookmarks';
 import { getNotes } from '../../../shared/api/notes';
-import { getReadingPosition, setCurrentBook } from '../../../shared/api/reader';
-import { scrollToAnchor } from '../../../shared/utils/anchor';
+import { getReadingPosition, ReadingPosition, setCurrentBook } from '../../../shared/api/reader';
 import { toast } from '../../../shared/stores/toastStore';
 import { reader } from '../../../shared/stores/readerStore';
 import type { Book } from '../../../shared/types/book';
@@ -29,6 +28,7 @@ export interface UseBookLoaderReturn {
     contentEl: HTMLDivElement;
     navigate: (path: string) => void;
   }) => Promise<void>;
+  position: () => ReadingPosition | null;
 }
 
 export function useBookLoader(): UseBookLoaderReturn {
@@ -36,6 +36,7 @@ export function useBookLoader(): UseBookLoaderReturn {
   const [isLoading, setIsLoading] = createSignal(true);
   const [bookmarks, setBookmarks] = createSignal<Bookmark[]>([]);
   const [notes, setNotes] = createSignal<Note[]>([]);
+  const [position, setPosition] = createSignal<ReadingPosition | null>(null);
   let contentRef: HTMLDivElement | undefined;
 
   async function loadBook(options: {
@@ -88,13 +89,14 @@ export function useBookLoader(): UseBookLoaderReturn {
       const nts = await getNotes(data.meta.path);
       setNotes(nts || []);
 
-      // Восстановить позицию
+      // Восстановить позицию — после того как заметки загружены
       const saved = await getReadingPosition(data.meta.path);
-      if (saved?.anchor_text) {
-        setTimeout(() => {
-          if (!contentRef) return;
-          scrollToAnchor(contentRef, saved);
-        }, 200);
+      
+      // Возвращаем информацию о позиции чтобы применить её на уровне страницы
+      // (после того как DOM будет готов и заметки применены)
+      if (saved) {
+        // Сохраняем позицию для последующего восстановления
+        setPosition(saved);
       }
 
       // Перейти к закладке — обрабатывается на уровне страницы
@@ -108,11 +110,12 @@ export function useBookLoader(): UseBookLoaderReturn {
   }
 
   return {
-    book,
-    isLoading,
-    bookmarks,
-    notes,
-    contentRef: () => contentRef,
-    loadBook,
-  };
+		book,
+		isLoading,
+		bookmarks,
+		notes,
+		contentRef: () => contentRef,
+		loadBook,
+		position,
+	};
 }

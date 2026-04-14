@@ -8,7 +8,7 @@ export type ReadingPosition = {
 	after?: string; 
 };
 
-export type ReaderMode = 'scroll' | 'page';
+export type ReaderMode = 'scroll' | 'chapters';
 
 export type ReadingSession = {
 	book_path: string;

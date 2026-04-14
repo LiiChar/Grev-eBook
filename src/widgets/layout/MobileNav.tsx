@@ -30,21 +30,21 @@ export const MobileNav = () => {
 	return (
 		<nav
 			class='
-				fixed bottom-1 left-0 right-0 z-50
+				fixed bottom-2 left-0 right-0 z-50
 				flex items-center justify-center
 				min-[500px]:hidden
 			'
 		>
-			<div class='flex items-center rounded-full justify-center backdrop-blur-xl border-t border-(--border) bg-(--background)/20 px-2 pt-1 pb-2 safe-area-inset-bottom'>
+			<div class='flex items-center rounded-full justify-center backdrop-blur-xl border-t border-(--border) p-1 bg-(--background)/40 safe-area-inset-bottom'>
 				{navItems.map(item => (
 					<Tooltip text={item.label}>
 						<button
 							onClick={() => navigate(item.path)}
 							class={`
-							flex flex-col items-center justify-center gap-0.5
-							min-w-12 px-3 py-1.5
-							rounded-xl
+							flex flex-col items-center justify-center gap-0.5 aspect-square rounded-full
+							min-w-12 p-4
 							transition-all duration-150
+							hover:bg-(--primary)/10
 							${
 								isActive(item.path)
 									? 'text-(--primary)'

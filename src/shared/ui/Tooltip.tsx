@@ -18,7 +18,7 @@ export const Tooltip = ({children, text}: TooltipProps) => {
 				shift: true,
 			}}
 		>
-			<TooltipCorvu.Trigger class='my-auto rounded-full bg-corvu-100 p-3 transition-all duration-100 hover:bg-secondary active:translate-y-0.5'>
+			<TooltipCorvu.Trigger class=''>
 				{children}
 			</TooltipCorvu.Trigger>
 			<TooltipCorvu.Portal>

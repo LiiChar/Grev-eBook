@@ -30,6 +30,7 @@ export interface UseNotesManagerReturn {
   handleAddNote: (options: {
     contentEl: HTMLDivElement;
     chapterId: string;
+    position?: { x: number; y: number };
   }) => void;
   createNote: (options: {
     bookPath: string;
@@ -60,7 +61,7 @@ export function useNotesManager(): UseNotesManagerReturn {
     });
   }
 
-  function handleAddNote(options: { contentEl: HTMLDivElement; chapterId: string }) {
+  function handleAddNote(options: { contentEl: HTMLDivElement; chapterId: string, position?: { x: number; y: number } }) {
     const { contentEl, chapterId } = options;
     const selection = window.getSelection();
     if (!selection) {
@@ -98,18 +99,21 @@ export function useNotesManager(): UseNotesManagerReturn {
     selection.removeAllRanges();
 
     setNodeEditing({
-      id: noteId,
-      text: '',
-      offset: textOffset,
-      preview,
-      visible: true,
-      color,
-      position: { x: rect.left, y: rect.top + 50 },
-      range: {
-        end: { chapter_id: chapterId, offset: endOffset },
-        start: { chapter_id: chapterId, offset: startOffset },
-      },
-    });
+			id: noteId,
+			text: '',
+			offset: textOffset,
+			preview,
+			visible: true,
+			color,
+			position: {
+				x: options.position?.x ?? rect.left,
+				y: options.position?.y ?? rect.top + 50,
+			},
+			range: {
+				end: { chapter_id: chapterId, offset: endOffset },
+				start: { chapter_id: chapterId, offset: startOffset },
+			},
+		});
   }
 
   async function createNote(options: { bookPath: string }) {
@@ -147,6 +151,14 @@ export function useNotesManager(): UseNotesManagerReturn {
     if (!contentEl) return;
 
     notes.forEach(note => {
+      // Проверяем, не обернута ли уже заметка
+      const existingMarks = contentEl.querySelectorAll(`mark[data-note="${note.id}"]`);
+      if (existingMarks.length > 0) {
+        // Уже существует, просто привязываем обработчик
+        bindNoteMarks(note, contentEl, _onMarkClick);
+        return;
+      }
+
       const startOffset = note.range.start.offset ?? null;
       const endOffset = note.range.end.offset ?? null;
 
@@ -198,18 +210,24 @@ export function useNotesManager(): UseNotesManagerReturn {
         }
       }
 
-      // Fallback: поиск по текстовым узлам
+      // Fallback: поиск по текстовым узлам (включая те что внутри <mark>)
       const walker = document.createTreeWalker(contentEl, NodeFilter.SHOW_TEXT, {
         acceptNode(node) {
           if (!node.textContent) return NodeFilter.FILTER_REJECT;
-          if (node.parentElement?.tagName === 'MARK') return NodeFilter.FILTER_REJECT;
+          // Теперь включаем текст внутри <mark> для поиска
           return NodeFilter.FILTER_ACCEPT;
         },
       });
 
       const targets: Text[] = [];
       while (walker.nextNode()) {
-        if (walker.currentNode.textContent!.includes(note.preview)) {
+        const textContent = walker.currentNode.textContent!;
+        // Проверяем что текст ещё не обёрнут
+        const parent = walker.currentNode.parentElement;
+        if (parent?.tagName === 'MARK' && parent.dataset.note === note.id) {
+          continue; // Уже обёрнуто
+        }
+        if (textContent.includes(note.preview)) {
           targets.push(walker.currentNode as Text);
         }
       }
@@ -225,8 +243,8 @@ export function useNotesManager(): UseNotesManagerReturn {
           mark.dataset.note = note.id;
           mark.style.backgroundColor = note.highlight_color ?? '#fb7100';
           mark.style.borderRadius = '4px';
-          mark.style.boxShadow = `0 0 0 3px ${note.highlight_color ?? '#fb7100'}`;
           mark.style.color = isHexLight(note.highlight_color ?? '#fb7100') ? '#000' : '#fff';
+          mark.style.zIndex = '-1'
           after.parentNode!.replaceChild(mark, after);
         }
       });
@@ -250,11 +268,11 @@ export function useNotesManager(): UseNotesManagerReturn {
     popup.dataset.popup = 'true';
     popup.className = `
       absolute z-50
-      bg-[var(--background)]
+      bg-(--background)/80 backdrop-blur-lg
       rounded-xl
       -left-[2px] top-8
       border border-[var(--border)]
-      shadow-lg
+      pr-4
     `;
 
     popup.innerHTML = `
@@ -270,7 +288,6 @@ export function useNotesManager(): UseNotesManagerReturn {
     mark.appendChild(popup);
 
     const rect = mark.getBoundingClientRect();
-    popup.style.width = `${rect.width + 10}px`;
 
     const input = popup.querySelector('input[type=color]') as HTMLInputElement;
     const preview = input.nextElementSibling as HTMLElement;
