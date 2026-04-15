@@ -12,7 +12,7 @@ import {
   Show,
 } from 'solid-js';
 import { useParams, useNavigate, useSearchParams } from '@solidjs/router';
-import { reader } from '../../../../shared/stores/readerStore';
+import { reader, setReader } from '../../../../shared/stores/readerStore';
 import { settings } from '../../../../shared/stores/settingsStore';
 import { scrollToTop } from '../../../../shared/utils/scroll';
 import { scrollToAnchor } from '../../../../shared/utils/anchor';
@@ -32,7 +32,6 @@ import { ReaderContent } from '@/features/reader/components/ReaderContent';
 import { ReaderToolbar } from '@/features/reader/components/ReaderToolbar';
 import { ReaderFooter } from '@/features/reader/components/ReaderFooter';
 import { ReaderNotePopup } from '@/features/reader/components/ReaderNotePopup';
-import type { ReaderMode } from '@/shared/api/reader';
 import { useSelection } from '@/shared/hooks/useSelection';
 import { GlassButton } from '@/shared/ui/GlassButton';
 import { Icon } from '@/shared/ui/Icon';
@@ -172,23 +171,33 @@ export function ReaderPage() {
   });
 
   function goToNextChapter() {
-    scrollToTop(contentRef!);
+		
     savePosition({
       contentEl: contentRef!,
       chapterId: currentChapter()?.id ?? '',
       bookPath: currentBookPath(),
       mode: settings.reader.mode,
     });
+		if (settings.reader.mode === 'chapters') {
+			if (reader.currentIndex < sortedChapters().length - 1)
+				setReader('currentIndex', reader.currentIndex + 1);
+		}
+		scrollToTop(contentRef!);
   }
 
   function goToPrevChapter() {
-    scrollToTop(contentRef!);
     savePosition({
       contentEl: contentRef!,
       chapterId: currentChapter()?.id ?? '',
       bookPath: currentBookPath(),
       mode: settings.reader.mode,
     });
+
+		if (settings.reader.mode === 'chapters') {
+			if (reader.currentIndex > 0)
+				setReader('currentIndex', reader.currentIndex - 1);
+		} 
+		scrollToTop(contentRef!);
   }
 
   function goToChapter(index: number) {

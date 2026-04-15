@@ -6,12 +6,12 @@ use crate::core::reader::ReadingPosition;
 #[serde(rename_all = "lowercase")]
 pub enum ReaderMode {
     Scroll,
-    Page,
+    Chapters,
 }
 
 impl Default for ReaderMode {
     fn default() -> Self {
-        Self::Page
+        Self::Chapters
     }
 }
 

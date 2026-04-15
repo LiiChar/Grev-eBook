@@ -1,3 +1,5 @@
+pub mod books_cache;
+
 use std::{
     collections::HashMap,
     fs::{self, File},
@@ -9,17 +11,17 @@ use std::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::core::book::model::Chapter;
+use crate::core::book::model::Book;
 
-/// Disk cache for parsed book chapters
-pub struct ChapterCache {
+/// Disk cache for parsed book Books
+pub struct BookCache {
     cache_dir: PathBuf,
     index: CacheIndex,
 }
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct CacheIndex {
-    /// file_path -> (sha256_hash, last_accessed, chapter_count)
+    /// file_path -> (sha256_hash, last_accessed, Book_count)
     entries: HashMap<String, CacheEntry>,
 }
 
@@ -28,11 +30,11 @@ pub struct CacheEntry {
     pub file_hash: String,
     pub last_modified: u64,
     pub last_accessed: u64,
-    pub chapter_count: usize,
+    pub book_count: usize,
     pub cached_at: u64,
 }
 
-impl ChapterCache {
+impl BookCache {
     pub fn new(cache_dir: PathBuf) -> Self {
         fs::create_dir_all(&cache_dir).ok();
         
@@ -65,34 +67,34 @@ impl ChapterCache {
         self.index.entries.get(file_path).is_some()
     }
 
-    /// Get cached chapters
-    pub fn get_chapters(&self, file_path: &str) -> Option<Vec<Chapter>> {
+    /// Get cached Books
+    pub fn get_books(&self, file_path: &str) -> Option<Vec<Book>> {
         let entry = self.index.entries.get(file_path)?;
-        let chapters_path = self.cache_dir.join(format!("{}.chapters.json", entry.file_hash));
+        let books_path = self.cache_dir.join(format!("{}.Books.json", entry.file_hash));
 
-        if chapters_path.exists() {
-            let content = fs::read_to_string(&chapters_path).ok()?;
-            let chapters: Vec<Chapter> = serde_json::from_str(&content).ok()?;
+        if books_path.exists() {
+            let content = fs::read_to_string(&books_path).ok()?;
+            let books: Vec<Book> = serde_json::from_str(&content).ok()?;
             
             // Update access time in index
-            Some(chapters)
+            Some(books)
         } else {
             None
         }
     }
 
-    /// Save chapters to cache
-    pub fn set_chapters(&mut self, file_path: &str, file_hash: &str, chapters: &[Chapter]) {
+    /// Save Books to cache
+    pub fn set_books(&mut self, file_path: &str, file_hash: &str, Books: &[Book]) {
         // Remove old entry if exists
         if let Some(old_entry) = self.index.entries.remove(file_path) {
-            let old_path = self.cache_dir.join(format!("{}.chapters.json", old_entry.file_hash));
+            let old_path = self.cache_dir.join(format!("{}.Books.json", old_entry.file_hash));
             fs::remove_file(old_path).ok();
         }
 
-        // Write new chapters
-        let chapters_path = self.cache_dir.join(format!("{}.chapters.json", file_hash));
-        if let Ok(json) = serde_json::to_string(chapters) {
-            let _ = fs::write(&chapters_path, json);
+        // Write new Books
+        let books_path = self.cache_dir.join(format!("{}.Books.json", file_hash));
+        if let Ok(json) = serde_json::to_string(Books) {
+            let _ = fs::write(&books_path, json);
         }
 
         let now = SystemTime::now()
@@ -106,7 +108,7 @@ impl ChapterCache {
                 file_hash: file_hash.to_string(),
                 last_modified: now,
                 last_accessed: now,
-                chapter_count: chapters.len(),
+                book_count: Books.len(),
                 cached_at: now,
             },
         );
@@ -117,7 +119,7 @@ impl ChapterCache {
     /// Clear all cache
     pub fn clear(&mut self) {
         for entry in self.index.entries.values() {
-            let path = self.cache_dir.join(format!("{}.chapters.json", entry.file_hash));
+            let path = self.cache_dir.join(format!("{}.Books.json", entry.file_hash));
             fs::remove_file(path).ok();
         }
         self.index.entries.clear();
@@ -127,7 +129,7 @@ impl ChapterCache {
     /// Get cache stats
     pub fn get_stats(&self) -> CacheStats {
         let total_size: u64 = self.index.entries.values().map(|e| {
-            let path = self.cache_dir.join(format!("{}.chapters.json", e.file_hash));
+            let path = self.cache_dir.join(format!("{}.Books.json", e.file_hash));
             fs::metadata(path).map(|m| m.len()).unwrap_or(0)
         }).sum();
 
@@ -151,7 +153,7 @@ impl ChapterCache {
 
         for key in &expired {
             if let Some(entry) = self.index.entries.remove(key) {
-                let path = self.cache_dir.join(format!("{}.chapters.json", entry.file_hash));
+                let path = self.cache_dir.join(format!("{}.Books.json", entry.file_hash));
                 fs::remove_file(path).ok();
             }
         }

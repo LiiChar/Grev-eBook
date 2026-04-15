@@ -1,7 +1,7 @@
 import { createSignal, onMount, onCleanup, For, Show, createMemo, Component } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { open } from "@tauri-apps/plugin-dialog";
-import { getBooks, addBooks, addBook } from "../../shared/api/book";
+import { addBooks, addBook } from "../../shared/api/book";
 import { toast } from "../../shared/stores/toastStore";
 import { GlassButton } from "../../shared/ui/GlassButton";
 import { GlassPanel } from "../../shared/ui/GlassPanel";
@@ -9,15 +9,13 @@ import { Icon } from "../../shared/ui/Icon";
 import { Search } from "../../components/layout/Search";
 import { AddMenu } from "../../components/layout/AddMenu";
 import { Select } from "../../shared/ui/Select";
-import { BookLoader } from "../../shared/ui/Loader";
-import { reader, setReader } from "../../shared/stores/readerStore";
+import { ensureBooksLoaded, reader, setReader } from "../../shared/stores/readerStore";
 import { MobilePadding } from "@/widgets/layout/MobilePadding";
 import { Book as BookType } from "../../shared/types/book";
 import { getReadingPosition } from "../../shared/api/reader";
 import { stripHtml } from "../../shared/utils/html";
 import { getFileExtension } from "../../shared/utils/file";
 import { SkeletonLibrary } from "@/features/library/components/Skeleton";
-import { TTS } from "@/widgets/tts/TTS";
 
 type SortKey = "title" | "author" | "recent";
 
@@ -73,7 +71,7 @@ const BookGridCard: Component<BookCardBaseProps> = (props) => {
 		<div
 			onClick={props.onClick}
 			class={`
-				group relative aspect-[2/3] rounded-xl overflow-hidden cursor-pointer
+				group relative aspect-[2/3] rounded-lg overflow-hidden cursor-pointer
 				bg-[var(--surface)] hover:bg-[var(--surface-hover)]
 				border border-[var(--border)] hover:border-[var(--border-strong)]
 				transition-all duration-200 hover:scale-[1.02] hover:shadow-xl
@@ -177,15 +175,15 @@ const BookListCard: Component<BookCardBaseProps> = (props) => {
 		<GlassPanel
 			class={`
 				flex items-center gap-4 cursor-pointer
-				hover:bg-[var(--surface-hover)] transition-all duration-150
+				hover:bg-[var(--surface-hover)] transition-all duration-150 overflow-hidden
 				animate-fade-in
 			`}
 			padding='sm'
-			rounded='lg'
+			rounded='md'
 			onClick={props.onClick}
 		>
 			{percent() > 0 && (
-				<div class='absolute inset-0 rounded-xl z-[5] pointer-events-none overflow-hidden'>
+				<div class='absolute inset-0 rounded-md z-[5] pointer-events-none overflow-hidden'>
 					<div
 						class='h-full transition-[width] duration-200 bg-(--primary)/10'
 						style={{ width: `${percent()}%` }}
@@ -230,13 +228,18 @@ const BookListCard: Component<BookCardBaseProps> = (props) => {
 
 export function LibraryPage() {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = createSignal(true);
+  const [isLoading, setIsLoading] = createSignal(!reader.booksLoaded);
   const [searchQuery, setSearchQuery] = createSignal("");
   const [sortKey, setSortKey] = createSignal<SortKey>("title");
   const [viewMode, setViewMode] = createSignal<"grid" | "list">("grid");
   let isMounted = true;
 
   onMount(async () => {
+    if (reader.booksLoaded) {
+      setIsLoading(false);
+      return;
+    }
+
     await loadBooks();
   });
 
@@ -247,10 +250,7 @@ export function LibraryPage() {
   async function loadBooks() {
     setIsLoading(true);
     try {
-      const data = await getBooks();
-      if (isMounted) {
-        setReader({ books: data });
-      }
+      await ensureBooksLoaded();
     } catch (err) {
       console.error("Failed to load books:", err);
       toast.error("Не удалось загрузить библиотеку");
@@ -268,7 +268,10 @@ export function LibraryPage() {
     try {
       const newBooks = await addBooks(folder);
       // Добавляем новые книги к существующим, а не заменяем все
-      setReader({ books: [...reader.books, ...newBooks] });
+      setReader({
+        books: [...reader.books, ...newBooks],
+        booksLoaded: true,
+      });
       toast.success(`Добавлено книг: ${newBooks.length}`);
     } catch (err) {
       console.error("Failed to add books:", err);
@@ -291,7 +294,7 @@ export function LibraryPage() {
 
     try {
       await addBook(file);
-      await loadBooks();
+      await ensureBooksLoaded(true);
       toast.success("Книга добавлена");
     } catch (err) {
       console.error("Failed to add book:", err);
@@ -335,11 +338,9 @@ export function LibraryPage() {
 
   return (
 		<div class='h-full flex flex-col overflow-hidden'>
-			{/* Header */}
-			<TTS/>
 			<header
 				data-tauri-drag-region
-				class='shrink-0 px-6 py-4 border-b border-(--border) bg-(--background)'
+				class='shrink-0 px-4 py-2 border-b border-(--border) bg-(--background)'
 			>
 				<div class='flex items-center justify-between gap-4'>
 					{/* <h1 class='text-xl font-semibold'>Библиотека</h1> */}
@@ -434,7 +435,7 @@ export function LibraryPage() {
 							</div>
 						}
 					>
-						<div class='grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-4'>
+						<div class='grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-2'>
 							<For each={filteredBooks()} fallback={null}>
 								{(book, index) => (
 									<BookGridCard

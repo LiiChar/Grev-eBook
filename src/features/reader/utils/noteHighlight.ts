@@ -155,6 +155,8 @@ export function bindNoteMarks(
     const mark = el as HTMLElement;
     mark.style.position = 'relative';
     mark.style.cursor = 'pointer';
+    mark.style.zIndex = '-1';
+    mark.style.boxShadow = 'none';
 
     if (mark.dataset.popupBound === '1') return;
     mark.dataset.popupBound = '1';

@@ -52,19 +52,13 @@
 /* Headings */
 .reader h1,
 .reader h2,
-.reader h3,
-.reader h4,
-.reader h5,
-.reader h6,
 .chapter h1,
-.chapter h2,
-.chapter h3,
-.chapter h4 {
+.chapter h2 {
   font-family: var(--font-ui) !important;
   font-weight: 600 !important;
   line-height: 1.3 !important;
   margin-top: 1.5em !important;
-  margin-bottom: 0.5em !important;
+  margin-bottom: 1.0em !important;
   text-indent: 0 !important;
   color: var(--foreground) !important;
   border: none !important;
@@ -76,6 +70,13 @@
 .reader h2, .chapter h2 { font-size: 1.3em; }
 .reader h3, .chapter h3 { font-size: 1.15em; }
 .reader h4, .chapter h4 { font-size: 1em; }
+
+.reader h1 p,
+.reader h2 p,
+.chapter h1 p,
+.chapter h2 p {
+  margin-bottom: 6px !important;
+}
 
 /* Links */
 .reader a,

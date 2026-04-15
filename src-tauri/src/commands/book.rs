@@ -10,7 +10,6 @@ use tauri_plugin_store::StoreExt;
 use crate::{
     core::{
         book::model::Book,
-        cache::ChapterCache,
         formats::{get_book as gBook, get_books as gBooks},
         storage::{save_state, STORE_PATH},
     },
@@ -56,8 +55,6 @@ pub async fn open_book(
             }
         }
     }
-
-    // --- Persist to disk (non-blocking) ---
     let state_clone = {
         let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
         state.clone()
@@ -129,9 +126,14 @@ pub async fn add_book(
 }
 
 #[tauri::command]
-pub async fn get_books(state: State<'_, Arc<RwLock<AppState>>>) -> Result<Vec<Book>, String> {
+pub async fn get_books(
+    state: State<'_, Arc<RwLock<AppState>>>,
+) -> Result<Vec<Book>, String> {
+
     let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
-    Ok(state.book.books.clone())
+    let books = state.book.books.clone();
+
+    Ok(books)
 }
 
 #[tauri::command]
@@ -155,7 +157,6 @@ pub async fn get_book(
 pub async fn clear_store(
     app: tauri::AppHandle,
     state: State<'_, Arc<RwLock<AppState>>>,
-    cache: State<'_, Arc<RwLock<ChapterCache>>>,
 ) -> Result<(), String> {
     {
         let mut state = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
@@ -165,35 +166,9 @@ pub async fn clear_store(
         state.notes.items.clear();
     }
 
-    // Clear chapter cache
-    {
-        let mut cache = cache.write().map_err(|e| format!("Cache lock poisoned: {}", e))?;
-        cache.clear();
-    }
-
     log::info!("Store and cache cleared");
     let store = app.store(STORE_PATH).map_err(|e| format!("Failed to open store: {}", e))?;
     let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
     save_state(&store, &state).map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-/// Get cache statistics
-#[tauri::command]
-pub async fn get_cache_stats(
-    cache: State<'_, Arc<RwLock<ChapterCache>>>,
-) -> Result<crate::core::cache::CacheStats, String> {
-    let cache = cache.read().map_err(|e| format!("Lock poisoned: {}", e))?;
-    let stats = cache.get_stats();
-    Ok(stats)
-}
-
-/// Clear chapter cache
-#[tauri::command]
-pub async fn clear_chapter_cache(
-    cache: State<'_, Arc<RwLock<ChapterCache>>>,
-) -> Result<(), String> {
-    let mut cache = cache.write().map_err(|e| format!("Lock poisoned: {}", e))?;
-    cache.clear();
     Ok(())
 }

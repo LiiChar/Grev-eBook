@@ -10,7 +10,7 @@ import { Icon } from "../../../shared/ui/Icon";
 import type { Book, Chapter } from "../../../shared/types/book";
 import { getFileExtension } from "../../../shared/utils/file";
 import { BookLoader } from "../../../shared/ui/Loader";
-import { reader, setReader } from "../../../shared/stores/readerStore";
+import { ensureBooksLoaded, reader, setReader } from "../../../shared/stores/readerStore";
 import { MobilePadding } from "@/widgets/layout/MobilePadding";
 
 export function BookDetailPage() {
@@ -30,6 +30,8 @@ export function BookDetailPage() {
 async function loadBook() {
 	setIsLoading(true);
 	try {
+		await ensureBooksLoaded();
+
 		if (!params.id) {
 			throw Error('Book ID is missing');
 		}

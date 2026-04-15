@@ -50,17 +50,6 @@ export function SettingsPage() {
 
   return (
 		<div class='h-full flex flex-col overflow-hidden'>
-			{/* Header с выпадающим меню */}
-			<header class='shrink-0 border-b border-[var(--border)] p-4'>
-				<div class='max-w-3xl mx-auto'>
-					<h1 class='flex items-center gap-2 '>
-						<Icon name='settings' size={20} class='sm:hidden' />
-						<span class='hidden sm:inline'>Настройки</span>
-					</h1>
-				</div>
-			</header>
-
-			{/* Content */}
 			<main class='flex-1 overflow-y-auto p-4 md:p-6'>
 				<div class='relative mb-4' ref={dropdownRef}>
 					<button

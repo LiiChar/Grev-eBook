@@ -1,4 +1,4 @@
-import { Accessor, createMemo, createSignal, JSX, onMount, onCleanup, Show, splitProps } from "solid-js";
+import { Accessor, createMemo, createSignal, JSX, onMount, Show, splitProps } from "solid-js";
 import { Book as BookType } from "../../shared/types/book";
 import { GlassPanel } from "../../shared/ui/GlassPanel";
 import { Icon } from "../../shared/ui/Icon";
@@ -59,21 +59,14 @@ export const BookCardGrid = (props: BookCardProps) => {
 	});
 
 	const [percent, setPercent] = createSignal(0);
-	let cleanupRef: (() => void) | undefined;
 
 	onMount(async () => {
-		// Очистка предыдущего URL если есть
-		cleanupRef = () => {
-			const url = coverUrl();
-			if (url) URL.revokeObjectURL(url);
-		};
-
 		if (!props.book.chapters?.length) return;
 
 		const pos = await getReadingPosition(props.book.meta.path);
 		if (!pos?.anchor_text) return;
 
-		const chaptersText = props.book.chapters.map((c: any) => stripHtml(c.html));
+		const chaptersText = props.book.chapters.map(c => stripHtml(c.html));
 
 		const fullText = chaptersText.join('\n');
 		const anchor = pos.anchor_text.trim();
@@ -86,18 +79,13 @@ export const BookCardGrid = (props: BookCardProps) => {
 		setPercent(Math.min(Math.max(value, 1), 100));
 	});
 
-	onCleanup(() => {
-		// Очищаем blob URL при размонтировании
-		if (cleanupRef) cleanupRef();
-	});
-
 	return (
 		<div
 			onClick={props.onClick}
 			class={`
-        group relative aspect-[2/3] rounded-xl overflow-hidden cursor-pointer
-        bg-[var(--surface)] hover:bg-[var(--surface-hover)]
-        border border-[var(--border)] hover:border-[var(--border-strong)]
+        group relative aspect-2/3 rounded-xl overflow-hidden cursor-pointer
+        bg-(--surface) hover:bg-(--surface-hover)
+        border border-(--border) hover:border-(--border-strong)
         transition-all duration-200 hover:scale-[1.02] hover:shadow-xl
         animate-fade-in ${props.class}
       `}
@@ -177,21 +165,16 @@ export const BookCardList = (props: BookCardProps) => {
 	});
 
 	const [percent, setPercent] = createSignal(0);
-	let cleanupRef: (() => void) | undefined;
+
+
 
 	onMount(async () => {
-		// Очистка предыдущего URL если есть
-		cleanupRef = () => {
-			const url = coverUrl();
-			if (url) URL.revokeObjectURL(url);
-		};
-
 		if (!props.book.chapters?.length) return;
 
 		const pos = await getReadingPosition(props.book.meta.path);
 		if (!pos?.anchor_text) return;
 
-		const chaptersText = props.book.chapters.map((c: any) => stripHtml(c.html));
+		const chaptersText = props.book.chapters.map(c => stripHtml(c.html));
 
 		const fullText = chaptersText.join('\n');
 		const anchor = pos.anchor_text.trim();
@@ -202,11 +185,6 @@ export const BookCardList = (props: BookCardProps) => {
 		const value = Math.round((index / fullText.length) * 100);
 
 		setPercent(Math.min(Math.max(value, 1), 100));
-	});
-
-	onCleanup(() => {
-		// Очищаем blob URL при размонтировании
-		if (cleanupRef) cleanupRef();
 	});
 
 

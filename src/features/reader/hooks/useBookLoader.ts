@@ -10,7 +10,7 @@ import { getBookmarks } from '../../../shared/api/bookmarks';
 import { getNotes } from '../../../shared/api/notes';
 import { getReadingPosition, ReadingPosition, setCurrentBook } from '../../../shared/api/reader';
 import { toast } from '../../../shared/stores/toastStore';
-import { reader } from '../../../shared/stores/readerStore';
+import { ensureBooksLoaded, reader, setReader } from '../../../shared/stores/readerStore';
 import type { Book } from '../../../shared/types/book';
 import type { Bookmark } from '../../../shared/api/bookmarks';
 import type { Note } from '../../../shared/types/note';
@@ -51,6 +51,8 @@ export function useBookLoader(): UseBookLoaderReturn {
     setIsLoading(true);
 
     try {
+      await ensureBooksLoaded();
+
       if (!bookId) throw new Error('Book ID is missing');
 
       const libraryBook =
@@ -98,7 +100,8 @@ export function useBookLoader(): UseBookLoaderReturn {
         // Сохраняем позицию для последующего восстановления
         setPosition(saved);
       }
-
+      setReader('chapters', data.chapters);
+      setReader('bookId', data.id);
       // Перейти к закладке — обрабатывается на уровне страницы
     } catch (err) {
       console.error('Failed to load book:', err);

@@ -33,11 +33,11 @@ export function ReaderContent(props: ReaderContentProps) {
   return (
 		<div
 			ref={props.contentRef}
-			class='flex-1 overflow-y-auto reader-wrapper pt-11'
+			class='flex-1 overflow-y-auto reader-wrapper scroll-smooth pt-11'
 			onScroll={props.onScroll}
 		>
 			<article
-				class='reader mx-auto px-6 py-8'
+				class='reader mx-auto px-6 py-8 overflow-x-hidden'
 				style={{
 					'max-width': `${props.settings.columnWidth}px`,
 					'font-size': `${props.settings.fontSize}px`,

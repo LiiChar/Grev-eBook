@@ -109,6 +109,7 @@ export function BookmarksPage() {
   const filteredNotes = createMemo(() => {
     const filter = filterBookId();
     if (!filter) return notes();
+		
     return notes().filter((n) => n.book_path === filter);
   });
 
@@ -134,68 +135,70 @@ export function BookmarksPage() {
   return (
 		<div class='h-full flex flex-col overflow-hidden'>
 			{/* Header */}
-			<header class='shrink-0 px-6 py-4 border-b border-[var(--border)]'>
+			<header class='shrink-0 px-4 py-2 border-b border-[var(--border)]'>
 				<div class='flex items-center justify-between gap-4'>
-					<h1 class='text-xl font-semibold'>Закладки и заметки</h1>
-
-					{/* Filter by book */}
-					<Select
-						class='w-60'
-						onChange={e => setFilterBookId(e || null)}
-						value={filterBookId() ?? ''}
-						options={[
-							{label: 'Все книги', value: ''},
-							...books().map(book => ({label: book.meta.title, value: book.id})),
-						]}
-					/>
-				</div>
-
-				{/* Tabs */}
-				<div class='flex gap-1 mt-4 p-1 bg-[var(--surface)] rounded-lg w-fit'>
-					<button
-						onClick={() => setActiveTab('bookmarks')}
-						class={`
-              px-4 py-2 rounded-md text-sm font-medium transition-colors
+					<div class='flex gap-1 bg-[var(--surface)] rounded-md w-fit p-0.5 h-full'>
+						<button
+							onClick={() => setActiveTab('bookmarks')}
+							class={`
+              px-2 py-1 rounded-md p-2 text-sm font-medium transition-colors
               ${
 								activeTab() === 'bookmarks'
 									? 'bg-[var(--background)] shadow-sm'
 									: 'hover:bg-[var(--surface-hover)]'
 							}
             `}
-					>
-						<span class='flex items-center gap-2'>
-							<Icon name='bookmark' size={16} />
-							Закладки
-							<span class='text-xs px-1.5 py-0.5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)]'>
-								{filteredBookmarks().length}
+						>
+							<span class='flex items-center gap-2'>
+								<Icon name='bookmark' size={16} />
+								<span class='max-[600px]:hidden'>Закладки</span>
+								<span class='max-[600px]:hidden text-xs px-1.5 py-0.5 rounded-full bg-(--primary)/10 text-(--primary)'>
+									{filteredBookmarks().length}
+								</span>
 							</span>
-						</span>
-					</button>
-					<button
-						onClick={() => setActiveTab('notes')}
-						class={`
-              px-4 py-2 rounded-md text-sm font-medium transition-colors
+						</button>
+						<button
+							onClick={() => setActiveTab('notes')}
+							class={`
+              px-2 py-1 p-2 rounded-md text-sm font-medium transition-colors
               ${
 								activeTab() === 'notes'
-									? 'bg-[var(--background)] shadow-sm'
-									: 'hover:bg-[var(--surface-hover)]'
+									? 'bg-(--background) shadow-sm'
+									: 'hover:bg-(--surface-hover)'
 							}
             `}
-					>
-						<span class='flex items-center gap-2'>
-							<Icon name='documentText' size={16} />
-							Заметки
-							<span class='text-xs px-1.5 py-0.5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)]'>
-								{filteredNotes().length}
+						>
+							<span class='flex items-center gap-2'>
+								<Icon name='documentText' size={16} />
+								<span class='max-[600px]:hidden'>Заметки</span>
+								<span class='max-[600px]:hidden text-xs px-1.5 py-0.5 rounded-full bg-(--primary)/10 text-(--primary)'>
+									{filteredNotes().length}
+								</span>
 							</span>
-						</span>
-					</button>
+						</button>
+					</div>
+
+					{/* Filter by book */}
+					<Select
+						class='w-full'
+						onChange={e => setFilterBookId(e || null)}
+						value={filterBookId() ?? ''}
+						options={[
+							{ label: 'Все книги', value: '' },
+							...books().map(book => ({
+								label: book.meta.title,
+								value: book.meta.path,
+							})),
+						]}
+					/>
 				</div>
+
+				{/* Tabs */}
 			</header>
 
 			{/* Content */}
 			<div class='flex-1 overflow-y-auto p-6'>
-					<BookLoader loading={isLoading} size={56} />
+				<BookLoader loading={isLoading} size={56} />
 
 				{/* Bookmarks tab */}
 				<Show when={!isLoading() && activeTab() === 'bookmarks'}>
@@ -217,11 +220,15 @@ export function BookmarksPage() {
 											<Icon name='book' size={16} />
 											{getBookTitle(bookPath)}
 										</h2>
-										<GlassPanel padding='none' rounded='xl'>
-											<div class='divide-y divide-(--border)'>
+										<GlassPanel
+											padding='none'
+											rounded='xl'
+											class='overflow-hidden'
+										>
+											<div class='divide-y divide-(--border) overflow-hidden'>
 												<For each={bms}>
 													{bookmark => (
-														<div class='flex items-start gap-3 p-4 hover:bg-[var(--surface-hover)] transition-colors'>
+														<div class='flex items-start verflow-hidden gap-3 p-2 px-4 hover:bg-[var(--surface-hover)] transition-colors'>
 															<Icon
 																name='bookmarkSolid'
 																size={18}
@@ -289,11 +296,15 @@ export function BookmarksPage() {
 											<Icon name='book' size={16} />
 											{getBookTitle(bookId)}
 										</h2>
-										<GlassPanel padding='none' rounded='xl'>
-											<div class='divide-y divide-[var(--border)]'>
+										<GlassPanel
+											padding='none'
+											rounded='xl'
+											class='overflow-hidden'
+										>
+											<div class='divide-y divide-[var(--border)] overflow-hidden'>
 												<For each={ns}>
 													{note => (
-														<div class='p-4 hover:bg-[var(--surface-hover)] transition-colors'>
+														<div class='p-2 px-4 hover:bg-[var(--surface-hover)] transition-colors'>
 															<div class='flex items-start gap-3'>
 																<div
 																	class='w-1 h-full rounded-full shrink-0'
