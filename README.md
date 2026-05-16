@@ -38,11 +38,11 @@
 
 ## ✨ Скриншоты
 
-![Скриншот страницы библиотеки](https://github.com/LiiChar/Grev-eBook/tree/main/screenshot/image1.png)
+![Скриншот страницы библиотеки](https://github.com/LiiChar/Grev-eBook/blob/main/screenshot/image1.png)
 
-![Скриншот страницы книги](https://github.com/LiiChar/Grev-eBook/tree/main/screenshot/image2.png)
+![Скриншот страницы книги](https://github.com/LiiChar/Grev-eBook/blob/main/screenshot/image2.png)
 
-![Скриншот читалки](https://github.com/LiiChar/Grev-eBook/tree/main/screenshot/image3.png)
+![Скриншот читалки](https://github.com/LiiChar/Grev-eBook/blob/main/screenshot/image3.png)
 
 
 ---
