@@ -14,7 +14,6 @@ function createMarkElement(noteId: string, color: string): HTMLElement {
   const mark = document.createElement('mark');
   mark.style.backgroundColor = color;
   mark.style.borderRadius = '4px';
-  mark.style.boxShadow = `0 0 0 3px ${color}`;
   mark.style.color = isHexLight(color) ? '#000' : '#fff';
   mark.dataset['note'] = noteId;
   return mark;
@@ -156,7 +155,6 @@ export function bindNoteMarks(
     mark.style.position = 'relative';
     mark.style.cursor = 'pointer';
     mark.style.zIndex = '-1';
-    mark.style.boxShadow = 'none';
 
     if (mark.dataset.popupBound === '1') return;
     mark.dataset.popupBound = '1';

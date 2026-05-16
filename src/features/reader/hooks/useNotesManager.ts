@@ -298,7 +298,6 @@ export function useNotesManager(): UseNotesManagerReturn {
       document.querySelectorAll(`mark[data-note="${note.id}"]`).forEach(el => {
         const m = el as HTMLElement;
         m.style.backgroundColor = input.value;
-        m.style.boxShadow = `0 0 0 3px ${input.value}`;
         m.style.color = isHexLight(input.value) ? '#000' : '#fff';
       });
       updateNoteApi(note.id, note.range, note.text, true, input.value);

@@ -1,9 +1,3 @@
-/**
- * ReaderPage — оркестратор страницы читалки.
- * Тонкий компонент: собирает хуки и компоненты, управляет общей логикой.
- * ~180 строк вместо 1412.
- */
-
 import {
   createSignal,
   createMemo,
@@ -299,7 +293,7 @@ export function ReaderPage() {
 
 			<Show when={!isLoading() && book()}>
 				<ReaderToolbar
-					bookTitle={book()!.meta.title}
+					book={book()!}
 					hasMultipleChapters={hasMultipleChapters()}
 					showControls={showControls()}
 					isFullscreen={isFullscreen()}

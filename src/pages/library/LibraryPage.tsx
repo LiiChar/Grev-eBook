@@ -143,9 +143,9 @@ const BookListCard: Component<BookCardBaseProps> = (props) => {
 		}
 	});
 
-	const [percent, setPercent] = createSignal(0);
 	let cleanupRef: (() => void) | undefined;
-
+	
+	const [percent, setPercent] = createSignal(0);
 	onMount(async () => {
 		cleanupRef = () => {
 			const url = coverUrl();
