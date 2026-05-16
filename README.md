@@ -38,11 +38,11 @@
 
 ## ✨ Скриншоты
 
-![Скриншот страницы библиотеки](/LiiChar/Grev-eBook/screenshots/image1.png)
+![Скриншот страницы библиотеки](/screenshots/image1.png)
 
-![Скриншот страницы книги](/LiiChar/Grev-eBook/screenshots/image2.png)
+![Скриншот страницы книги](/screenshots/image2.png)
 
-![Скриншот читалки](/LiiChar/Grev-eBook/screenshots/image3.png)
+![Скриншот читалки](/screenshots/image3.png)
 
 
 ---
