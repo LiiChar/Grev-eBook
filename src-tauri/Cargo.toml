@@ -45,6 +45,12 @@ docx-rust = "0.1.11"
 log = "0.4"
 sha2 = "0.10"
 hound = "3.5.1"
+url = "2.5.8"
+scraper = "0.27.0"
+reqwest = { version = "0.11", features = ["cookies", "rustls-tls", "brotli", "gzip", "deflate"] }
+headless_chrome = "1.0.21"
+features = "0.10.0"
+futures = "0.3.32"
 
 # piper-rs = "0.1.9"
 # ndarray = "=0.15.6"

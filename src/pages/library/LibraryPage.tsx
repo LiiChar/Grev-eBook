@@ -50,7 +50,12 @@ const BookGridCard: Component<BookCardBaseProps> = (props) => {
 
 		if (!props.book.chapters?.length) return;
 
-		const pos = await getReadingPosition(props.book.meta.path);
+		
+		let pos = props.book.position ?? null;
+
+		if (!pos) {
+			pos = await getReadingPosition(props.book.meta.path);
+		}
 		if (!pos?.anchor_text) return;
 
 		const chaptersText = props.book.chapters.map((c: any) => stripHtml(c.html));
@@ -154,7 +159,12 @@ const BookListCard: Component<BookCardBaseProps> = (props) => {
 
 		if (!props.book.chapters?.length) return;
 
-		const pos = await getReadingPosition(props.book.meta.path);
+		
+		let pos = props.book.position ?? null;
+
+		if (!pos) {
+			pos = await getReadingPosition(props.book.meta.path);
+		}
 		if (!pos?.anchor_text) return;
 
 		const chaptersText = props.book.chapters.map((c: any) => stripHtml(c.html));
@@ -232,6 +242,7 @@ export function LibraryPage() {
   const [searchQuery, setSearchQuery] = createSignal("");
   const [sortKey, setSortKey] = createSignal<SortKey>("title");
   const [viewMode, setViewMode] = createSignal<"grid" | "list">("grid");
+
   let isMounted = true;
 
   onMount(async () => {
@@ -278,6 +289,8 @@ export function LibraryPage() {
       toast.error("Ошибка при добавлении книг");
     }
   }
+
+
 
   async function handleAddFile() {
     const file = await open({
@@ -337,95 +350,99 @@ export function LibraryPage() {
   });
 
   return (
-		<div class='h-full flex flex-col overflow-hidden'>
-			<header
-				data-tauri-drag-region
-				class='shrink-0 px-4 py-2 border-b border-(--border) bg-(--background)'
-			>
-				<div class='flex items-center justify-between gap-4'>
-					{/* <h1 class='text-xl font-semibold'>Библиотека</h1> */}
+			<div class='h-full flex flex-col overflow-hidden'>
+				<header
+					data-tauri-drag-region
+					class='shrink-0 px-4 py-2 border-b border-(--border) bg-(--background)'
+				>
+					<div class='flex items-center justify-between gap-4'>
+						{/* <h1 class='text-xl font-semibold'>Библиотека</h1> */}
 
-					<div class='flex items-center justify-between gap-2 w-full'>
-						<div class='flex items-center gap-2'>
-							<Search
-								searchQuery={searchQuery()}
-								setSearchQuery={setSearchQuery}
-							/>
-							<Select
-								options={[
-									{ label: 'По названию', value: 'title' },
-									{ label: 'По автору', value: 'author' },
-									{ label: 'Недавние', value: 'recent' },
-								]}
-								value={sortKey()}
-								onChange={value => setSortKey(value as SortKey)}
-							/>
-						</div>
-						<div class='flex items-center gap-2'>
-							<div class='flex rounded-lg overflow-hidden border border-[var(--border)]'>
-								<button
-									onClick={() => setViewMode('grid')}
-									class={`p-2 transition-colors ${
-										viewMode() === 'grid'
-											? 'bg-(--primary) text-(--primary-foreground)'
-											: 'hover:bg-(--surface)'
-									}`}
-								>
-									<Icon name='bars3' size={18} />
-								</button>
-								<button
-									onClick={() => setViewMode('list')}
-									class={`p-2 transition-colors ${
-										viewMode() === 'list'
-											? 'bg-(--primary) text-(--primary-foreground)'
-											: 'hover:bg-(--surface)'
-									}`}
-								>
-									<Icon name='listBullet' size={18} />
-								</button>
+						<div class='flex items-center justify-between gap-2 w-full'>
+							<div class='flex items-center gap-2'>
+								<Search searchQuery={searchQuery()} setSearchQuery={setSearchQuery} />
+								<Select
+									options={[
+										{ label: 'По названию', value: 'title' },
+										{ label: 'По автору', value: 'author' },
+										{ label: 'Недавние', value: 'recent' },
+									]}
+									value={sortKey()}
+									onChange={value => setSortKey(value as SortKey)}
+								/>
 							</div>
-							<AddMenu
-								onAddFile={handleAddFile}
-								onAddFolder={handleAddFolder}
-							/>
+							<div class='flex items-center gap-2'>
+								<div class='flex rounded-lg overflow-hidden border border-[var(--border)]'>
+									<button
+										onClick={() => setViewMode('grid')}
+										class={`p-2 transition-colors ${
+											viewMode() === 'grid'
+												? 'bg-(--primary) text-(--primary-foreground)'
+												: 'hover:bg-(--surface)'
+										}`}
+									>
+										<Icon name='bars3' size={18} />
+									</button>
+									<button
+										onClick={() => setViewMode('list')}
+										class={`p-2 transition-colors ${
+											viewMode() === 'list'
+												? 'bg-(--primary) text-(--primary-foreground)'
+												: 'hover:bg-(--surface)'
+										}`}
+									>
+										<Icon name='listBullet' size={18} />
+									</button>
+								</div>
+								<AddMenu onAddFile={handleAddFile} onAddFolder={handleAddFolder} />
+							</div>
+
+							{/* Add buttons */}
 						</div>
-
-						{/* Add buttons */}
 					</div>
-				</div>
-			</header>
+				</header>
 
-			{/* Content */}
-			<div class='flex-1 overflow-y-auto p-6'>
-				<SkeletonLibrary loading={isLoading} />
+				{/* Content */}
+				<div class='flex-1 overflow-y-auto p-6'>
+					<SkeletonLibrary loading={isLoading} />
 
-				<Show when={!isLoading() && filteredBooks().length === 0}>
-					<div class='flex flex-col items-center justify-center h-64 gap-4'>
-						<Icon
-							name='book'
-							size={48}
-							class='text-[var(--foreground-muted)]'
-						/>
-						<p class='text-[var(--foreground-muted)]'>
-							{searchQuery() ? 'Книги не найдены' : 'Библиотека пуста'}
-						</p>
-						<Show when={!searchQuery()}>
-							<GlassButton onClick={handleAddFolder} variant='primary'>
+					<Show when={!isLoading() && filteredBooks().length === 0}>
+						<div class='flex flex-col items-center justify-center h-64 gap-4'>
+							<Icon name='book' size={48} class='text-[var(--foreground-muted)]' />
+							<p class='text-[var(--foreground-muted)]'>
+								{searchQuery() ? 'Книги не найдены' : 'Библиотека пуста'}
+							</p>
+							<Show when={!searchQuery()}>
+
+								<GlassButton onClick={handleAddFolder} variant='primary'>
 								<Icon name='folder' size={18} />
 								Добавить книги
 							</GlassButton>
-						</Show>
-					</div>
-				</Show>
+							</Show>
+						</div>
+					</Show>
 
-				<Show when={!isLoading() && filteredBooks().length > 0}>
-					<Show
-						when={viewMode() === 'grid'}
-						fallback={
-							<div class='flex flex-col gap-2'>
+					<Show when={!isLoading() && filteredBooks().length > 0}>
+						<Show
+							when={viewMode() === 'grid'}
+							fallback={
+								<div class='flex flex-col gap-2'>
+									<For each={filteredBooks()} fallback={null}>
+										{(book, index) => (
+											<BookListCard
+												book={book}
+												index={index()}
+												onClick={() => navigate(`/book/${book.id}`)}
+											/>
+										)}
+									</For>
+								</div>
+							}
+						>
+							<div class='grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-2'>
 								<For each={filteredBooks()} fallback={null}>
 									{(book, index) => (
-										<BookListCard
+										<BookGridCard
 											book={book}
 											index={index()}
 											onClick={() => navigate(`/book/${book.id}`)}
@@ -433,23 +450,10 @@ export function LibraryPage() {
 									)}
 								</For>
 							</div>
-						}
-					>
-						<div class='grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-2'>
-							<For each={filteredBooks()} fallback={null}>
-								{(book, index) => (
-									<BookGridCard
-										book={book}
-										index={index()}
-										onClick={() => navigate(`/book/${book.id}`)}
-									/>
-								)}
-							</For>
-						</div>
+						</Show>
 					</Show>
-				</Show>
-				<MobilePadding />
+					<MobilePadding />
+				</div>
 			</div>
-		</div>
-	);
+		);
 }

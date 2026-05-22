@@ -92,7 +92,13 @@ export function useBookLoader(): UseBookLoaderReturn {
       setNotes(nts || []);
 
       // Восстановить позицию — после того как заметки загружены
-      const saved = await getReadingPosition(data.meta.path);
+
+      
+      let saved = data.position ?? null;
+
+      if (!saved) {
+							saved = await getReadingPosition(data.meta.path);
+						}
       
       // Возвращаем информацию о позиции чтобы применить её на уровне страницы
       // (после того как DOM будет готов и заметки применены)

@@ -59,6 +59,7 @@ impl BookSource for DocxLoader {
             id: Uuid::new_v4().to_string(),
             meta,
             chapters,
+            position: None
         })
     }
 }

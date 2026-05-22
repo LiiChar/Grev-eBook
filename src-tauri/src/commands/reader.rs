@@ -19,6 +19,8 @@ use crate::{
 pub async fn get_reader_state(
     state: State<'_, Arc<RwLock<AppState>>>,
 ) -> Result<ReaderState, String> {
+    log::log!(log::Level::Info, "Command - reader: get_reader_state");
+
     let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
     Ok(state.reader.clone())
 }
@@ -29,6 +31,7 @@ pub async fn set_current_book(
     state: State<'_, Arc<RwLock<AppState>>>,
     book_path: String,
 ) -> Result<ReaderState, String> {
+    log::log!(log::Level::Info, "Command - reader: get_current_book");
     let now = now_ts();
     let cloned_state = {
         let mut state_guard = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
@@ -64,6 +67,7 @@ pub async fn save_reading_position(
     position: ReadingPosition,
     mode: ReaderMode,
 ) -> Result<ReaderState, String> {
+    log::log!(log::Level::Info, "Command - reader: save_reading_position");
     let now = now_ts();
 
     let reader_state = {
@@ -92,6 +96,7 @@ pub async fn get_reading_position(
     state: State<'_, Arc<RwLock<AppState>>>,
     book_path: String,
 ) -> Result<ReadingPosition, String> {
+    log::log!(log::Level::Info, "Command - reader: get_reading_position");
     let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
 
     let reader_position = state
@@ -116,6 +121,7 @@ pub async fn add_bookmark(
     preview: String,
     kind: BookmarkKind,
 ) -> Result<Bookmark, String> {
+    log::log!(log::Level::Info, "Command - reader: add_bookmark");
     let now = now_ts();
     let (bookmark, cloned_state) = {
         let mut state_guard = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;

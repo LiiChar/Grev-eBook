@@ -18,7 +18,7 @@ export interface ReaderFooterProps {
 }
 
 export function ReaderFooter(props: ReaderFooterProps) {
-  return (
+	return (
 		<footer
 			class={`
         shrink-0 h-10 fixed bottom-1 right-4 pl-5.5 w-full flex items-center justify-between gap-4
@@ -38,7 +38,7 @@ export function ReaderFooter(props: ReaderFooterProps) {
 			</GlassButton>
 
 			<div class='flex-1 max-w-sm flex items-center gap-2 border-[var(--border)] p-2 rounded-lg  backdrop-blur-md bg-(--background)/40'>
-				<span class='text-xs text-[var(--foreground-muted)] w-6 text-right'>
+				<span class='text-xs text-[var(--foreground-muted)] w-auto text-right'>
 					{props.currentIndex + 1}
 				</span>
 				<div class='flex-1 h-1 bg-[var(--border)] rounded-full overflow-hidden'>

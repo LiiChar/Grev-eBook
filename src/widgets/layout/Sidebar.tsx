@@ -36,7 +36,7 @@ export const Sidebar = () => {
 			<aside
 				class={`
             hidden min-[500px]:flex
-            h-full flex-col shadow-2xl border-r-0 border-t-0 border-b-0
+            h-full flex-col border-(--border)/40 border-r-1 border-t-0 border-b-0
             transition-all duration-300 ease-out shrink-0
             ${sidebarCollapsed() ? 'w-16' : 'w-38'}
           `}

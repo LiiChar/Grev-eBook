@@ -176,7 +176,7 @@ export function ReaderPage() {
 			if (reader.currentIndex < sortedChapters().length - 1)
 				setReader('currentIndex', reader.currentIndex + 1);
 		}
-		scrollToTop(contentRef!);
+		scrollToTop(contentRef!, 'instant');
   }
 
   function goToPrevChapter() {
@@ -191,7 +191,7 @@ export function ReaderPage() {
 			if (reader.currentIndex > 0)
 				setReader('currentIndex', reader.currentIndex - 1);
 		} 
-		scrollToTop(contentRef!);
+		scrollToTop(contentRef!, 'instant');
   }
 
   function goToChapter(index: number) {
@@ -282,7 +282,6 @@ export function ReaderPage() {
 							.forEach((el: Element) => {
 								const elh = el as HTMLElement;
 								elh.style.backgroundColor = color;
-								elh.style.boxShadow = `0 0 0 3px ${color}`;
 								elh.style.color = isHexLight(color) ? '#000' : '#fff';
 							});
 					}}

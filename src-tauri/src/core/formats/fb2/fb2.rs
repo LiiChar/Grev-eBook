@@ -64,6 +64,7 @@ impl BookSource for Fb2Loader {
                 path: path.to_string_lossy().to_string(),
             },
             chapters,
+            position: None
         })
     }
 

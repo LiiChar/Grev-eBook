@@ -1,10 +1,13 @@
 use serde::{Deserialize, Serialize};
 
+use crate::core::reader::ReadingPosition;
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Book {
     pub id: String,
     pub meta: BookMeta,
     pub chapters: Option<Vec<Chapter>>,
+    pub position: Option<ReadingPosition>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

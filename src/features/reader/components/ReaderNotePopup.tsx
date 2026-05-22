@@ -44,7 +44,6 @@ export function ReaderNotePopup(props: ReaderNotePopupProps) {
 								.forEach(el => {
 									const elh = el as HTMLElement;
 									elh.style.backgroundColor = color;
-									elh.style.boxShadow = `0 0 0 3px ${color}`;
 									elh.style.color = isHexLight(color) ? '#000' : '#fff';
 								});
 

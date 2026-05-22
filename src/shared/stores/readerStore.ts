@@ -17,6 +17,7 @@ let booksRequest: Promise<Book[]> | null = null;
 
 export async function ensureBooksLoaded(force = false) {
   if (!force && reader.booksLoaded) {
+    console.log('books loaded');
     return reader.books;
   }
 

@@ -3,15 +3,14 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use log::log;
 use tauri::{State};
 use tauri_plugin_log::log;
 use tauri_plugin_store::StoreExt;
 
 use crate::{
     core::{
-        book::model::Book,
-        formats::{get_book as gBook, get_books as gBooks},
-        storage::{save_state, STORE_PATH},
+        book::model::Book, formats::{get_book as gBook, get_books as gBooks}, reader::position, storage::{STORE_PATH, save_state}
     },
     state::AppState,
 };
@@ -22,6 +21,7 @@ pub async fn open_book(
     state: State<'_, Arc<RwLock<AppState>>>,
     path: String,
 ) -> Result<Book, String> {
+    log::log!(log::Level::Info, "Command: open_book");
     let path = Path::new(&path);
 
     // --- Fast path: check if chapters already in memory ---
@@ -76,6 +76,7 @@ pub async fn add_books(
     state: State<'_, Arc<RwLock<AppState>>>,
     path: &Path,
 ) -> Result<Vec<Book>, String> {
+    log::log!(log::Level::Info, "Command: add_books");
     let path = path.to_path_buf();
     let books = tauri::async_runtime::spawn_blocking(move || {
         gBooks(&path).map_err(|e| e.to_string())
@@ -104,6 +105,7 @@ pub async fn add_book(
     state: State<'_, Arc<RwLock<AppState>>>,
     path: &Path,
 ) -> Result<Vec<Book>, String> {
+    log::log!(log::Level::Info, "Command: add_book");
     let path = path.to_path_buf();
     let book = tauri::async_runtime::spawn_blocking(move || {
         gBook(&path, Some(false)).map_err(|e| e.to_string())
@@ -129,9 +131,23 @@ pub async fn add_book(
 pub async fn get_books(
     state: State<'_, Arc<RwLock<AppState>>>,
 ) -> Result<Vec<Book>, String> {
+    log::log!(log::Level::Info, "Command: get_books");
 
     let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
-    let books = state.book.books.clone();
+    let session = state.reader.sessions.clone();
+
+    let books = state.book.books.clone().iter().map(|b| {
+        let position = session.get(&b.meta.path);
+        Book {
+            id: b.id.clone(),
+            meta: b.meta.clone(),
+            chapters: b.chapters.clone(),
+            position: match position {
+                Some(p) => Some(p.position.clone()),
+                None => None,
+            },
+        }
+    }).collect();
 
     Ok(books)
 }
@@ -141,16 +157,43 @@ pub async fn get_book(
     state: State<'_, Arc<RwLock<AppState>>>,
     path: String,
 ) -> Result<Book, String> {
+    log::log!(log::Level::Info, "Command: get_book");
+
     let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
-    state.book.books.iter()
+    let book = state.book.books.iter()
         .find(|b| b.meta.path == path)
-        .cloned()
-        .or_else(|| {
-            gBook(Path::new(&path), Some(false))
-                .map_err(|e| e.to_string())
-                .ok()
+        .cloned();
+
+
+    if let Some(book) = book {
+        let position = state.reader.sessions.get(&path);
+        Ok(Book {
+            id: book.id.clone(),
+            meta: book.meta.clone(),
+            chapters: book.chapters.clone(),
+            position: match position {
+                Some(p) => Some(p.position.clone()),
+                None => None,
+            },
         })
-        .ok_or_else(|| "Book not found".to_string())
+    } else {
+        gBook(Path::new(&path), Some(false))
+            .map_err(|e| e.to_string())
+            .ok()
+            .map(|book| {
+                let position = state.reader.sessions.get(&path);
+                Book {
+                    id: book.id.clone(),
+                    meta: book.meta.clone(),
+                    chapters: book.chapters.clone(),
+                    position: match position {
+                        Some(p) => Some(p.position.clone()),
+                        None => None,
+                    },
+                }
+            })
+            .ok_or_else(|| "Book not found".to_string())
+    }
 }
 
 #[tauri::command]
@@ -158,6 +201,8 @@ pub async fn clear_store(
     app: tauri::AppHandle,
     state: State<'_, Arc<RwLock<AppState>>>,
 ) -> Result<(), String> {
+    log::log!(log::Level::Info, "Command: clear_store");
+
     {
         let mut state = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
         state.book.books.clear();

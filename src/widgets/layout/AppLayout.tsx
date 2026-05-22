@@ -4,6 +4,7 @@ import { Toaster } from '../../shared/ui/Toaster';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
 import { clearStore } from '@/shared/api/book';
+import { Usefull } from './Usefull';
 
 export function AppLayout(props: { children?: JSX.Element }) {
 
@@ -14,6 +15,7 @@ export function AppLayout(props: { children?: JSX.Element }) {
   return (
 		<div class='flex h-full w-full overflow-hidden bg-(--background)'>
 			<Sidebar />
+			<Usefull />
 
 			<main class='flex-1 h-full overflow-hidden flex flex-col md:pb-0 '>
 				{props.children}

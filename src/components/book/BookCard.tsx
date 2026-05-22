@@ -63,7 +63,11 @@ export const BookCardGrid = (props: BookCardProps) => {
 	onMount(async () => {
 		if (!props.book.chapters?.length) return;
 
-		const pos = await getReadingPosition(props.book.meta.path);
+		let pos = props.book.position ?? null;
+
+		if (!pos) {
+			pos = await getReadingPosition(props.book.meta.path);
+		}
 		if (!pos?.anchor_text) return;
 
 		const chaptersText = props.book.chapters.map(c => stripHtml(c.html));
@@ -171,7 +175,12 @@ export const BookCardList = (props: BookCardProps) => {
 	onMount(async () => {
 		if (!props.book.chapters?.length) return;
 
-		const pos = await getReadingPosition(props.book.meta.path);
+		let pos = props.book.position ?? null;
+
+		if (!pos) {
+			pos = await getReadingPosition(props.book.meta.path);
+		}
+
 		if (!pos?.anchor_text) return;
 
 		const chaptersText = props.book.chapters.map(c => stripHtml(c.html));

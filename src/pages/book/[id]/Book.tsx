@@ -35,6 +35,8 @@ async function loadBook() {
 		if (!params.id) {
 			throw Error('Book ID is missing');
 		}
+
+		console.log(reader.books, params.id);
     
 		const libraryBookIndex = reader.books.findIndex(b => b.id === params.id) ?? reader.books.findIndex(b => b.id === reader.bookId);
 

@@ -45,6 +45,7 @@ impl BookSource for HtmlLoader {
                 path: path.to_string_lossy().to_string(),
             },
             chapters: Some(vec![chapter]),
+            position: None
         })
     }
 

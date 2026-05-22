@@ -49,6 +49,7 @@ impl BookSource for EpubLoader {
             id: Uuid::new_v4().to_string(),
             meta: BookMeta { cover, ..meta },
             chapters,
+            position: None
         })
     }
 }

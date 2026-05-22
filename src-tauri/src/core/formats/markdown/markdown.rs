@@ -47,6 +47,7 @@ impl BookSource for MarkdownLoader {
                 path: path.to_string_lossy().to_string(),
             },
             chapters: Some(vec![chapter]),
+            position: None
         })
     }
 

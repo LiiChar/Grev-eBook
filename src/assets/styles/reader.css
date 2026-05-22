@@ -66,10 +66,16 @@
   border-bottom: 1px solid var(--border) !important;
 }
 
-.reader h1, .chapter h1 { font-size: 1.5em; }
-.reader h2, .chapter h2 { font-size: 1.3em; }
-.reader h3, .chapter h3 { font-size: 1.15em; }
+.reader h1, .chapter h1 { font-size: 2.5em; text-align: center; }
+.reader h2, .chapter h2 { font-size: 2em; text-align: center; padding-bottom: 0.2em; }
+.reader h3, .chapter h3 { font-size: 1.45em; }
 .reader h4, .chapter h4 { font-size: 1em; }
+
+.reader div:has(> img) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
 .reader h1 p,
 .reader h2 p,

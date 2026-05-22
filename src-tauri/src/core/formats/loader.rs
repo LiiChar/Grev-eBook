@@ -2,7 +2,7 @@ use crate::core::{
     book::model::Book,
     formats::{
         docx::DocxLoader, epub::EpubLoader, fb2::Fb2Loader, html::HtmlLoader,
-        markdown::MarkdownLoader, pdf::PdfLoader, txt::TxtLoader,
+        markdown::MarkdownLoader, txt::TxtLoader,
     },
     utils::get_files_with_extension,
 };
@@ -28,7 +28,6 @@ pub trait BookSource {
 fn available_sources() -> Vec<Box<dyn BookSource>> {
     vec![
         Box::new(TxtLoader),
-        Box::new(PdfLoader),
         Box::new(EpubLoader),
         Box::new(Fb2Loader),
         Box::new(HtmlLoader),
@@ -84,7 +83,7 @@ fn collect_book_paths(path: &Path) -> Vec<PathBuf> {
     }
     log::debug!("Collecting book paths from {:?}", path);
     let extensions = [
-        "txt", "pdf", "epub", "fb2", "zip", "html", "htm", "md", "markdown", "docx",
+        "txt", "epub", "fb2", "zip", "html", "htm", "md", "markdown", "docx",
     ];
     let mut unique = HashSet::new();
     let mut result = Vec::new();

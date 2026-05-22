@@ -1,7 +1,10 @@
+import { ReadingPosition } from "../api/reader";
+
 export type Book = {
 	id: string;
 	meta: BookMeta;
 	chapters: Chapter[];
+	position?: ReadingPosition;
 }
 
 export type BookMeta = {
