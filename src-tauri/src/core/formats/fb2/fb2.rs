@@ -55,7 +55,7 @@ impl BookSource for Fb2Loader {
         };
 
         Ok(Book {
-            id: Uuid::new_v4().to_string(),
+            id: self.generate_id(title.clone()),
             meta: BookMeta {
                 title,
                 author,
@@ -64,7 +64,7 @@ impl BookSource for Fb2Loader {
                 path: path.to_string_lossy().to_string(),
             },
             chapters,
-            position: None
+            position: None,
         })
     }
 
@@ -154,13 +154,12 @@ fn build_author(doc: &Document<'_>) -> Option<String> {
 fn extract_images(doc: &Document<'_>) -> HashMap<String, String> {
     let mut images = HashMap::new();
 
-    for node in doc.descendants().filter(|n| {
-        n.is_element() && n.tag_name().name() == "binary"
-    }) {
+    for node in doc
+        .descendants()
+        .filter(|n| n.is_element() && n.tag_name().name() == "binary")
+    {
         if let Some(id) = node.attribute("id") {
-            let content_type = node
-                .attribute("content-type")
-                .unwrap_or("image/jpeg");
+            let content_type = node.attribute("content-type").unwrap_or("image/jpeg");
 
             // Собираем весь текст внутри binary элемента
             let base64_data: String = node
@@ -187,33 +186,33 @@ fn extract_images(doc: &Document<'_>) -> HashMap<String, String> {
 /// Извлекает обложку из <coverpage><image l:href="#..."/></coverpage>
 fn extract_cover(doc: &Document<'_>, images: &HashMap<String, String>) -> Option<Vec<u8>> {
     // Ищем <coverpage>
-    let coverpage = doc.descendants().find(|n| {
-        n.is_element() && n.tag_name().name() == "coverpage"
-    })?;
+    let coverpage = doc
+        .descendants()
+        .find(|n| n.is_element() && n.tag_name().name() == "coverpage")?;
 
     // Ищем <image> внутри coverpage
-    let image = coverpage.descendants().find(|n| {
-        n.is_element() && n.tag_name().name() == "image"
-    })?;
+    let image = coverpage
+        .descendants()
+        .find(|n| n.is_element() && n.tag_name().name() == "image")?;
 
     // Получаем ссылку l:href="#cover.jpg"
-    let href = image.attribute("href")
+    let href = image
+        .attribute("href")
         .or_else(|| image.attribute("l:href"))?;
 
     // Убираем символ # в начале
     let image_id = href.trim_start_matches('#');
 
     // Находим изображение в HashMap и декодируем base64
-    images.get(image_id)
-        .and_then(|data_uri| {
-            // data_uri имеет формат "data:image/jpeg;base64,<base64_data>"
-            if let Some(comma_pos) = data_uri.find(',') {
-                let base64_part = &data_uri[comma_pos + 1..];
-                general_purpose::STANDARD.decode(base64_part).ok()
-            } else {
-                None
-            }
-        })
+    images.get(image_id).and_then(|data_uri| {
+        // data_uri имеет формат "data:image/jpeg;base64,<base64_data>"
+        if let Some(comma_pos) = data_uri.find(',') {
+            let base64_part = &data_uri[comma_pos + 1..];
+            general_purpose::STANDARD.decode(base64_part).ok()
+        } else {
+            None
+        }
+    })
 }
 
 /// Преобразует FB2 элемент в HTML
@@ -229,74 +228,55 @@ fn fb2_to_html(node: roxmltree::Node, images: &HashMap<String, String>) -> Strin
 
     match tag {
         "p" => {
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<p>{}</p>", content)
         }
 
         "title" => {
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<h2>{}</h2>", content)
         }
 
         "subtitle" => {
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<h3>{}</h3>", content)
         }
 
         "emphasis" => {
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<em>{}</em>", content)
         }
 
         "strong" => {
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<strong>{}</strong>", content)
         }
 
         "strikethrough" => {
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<s>{}</s>", content)
         }
 
         "subscript" => {
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<sub>{}</sub>", content)
         }
 
         "superscript" => {
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<sup>{}</sup>", content)
         }
 
         "code" => {
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<code>{}</code>", content)
         }
 
-        "empty-line" => {
-            "<br>".to_string()
-        }
+        "empty-line" => "<br>".to_string(),
 
         "image" => {
-            let href = node.attribute("href")
+            let href = node
+                .attribute("href")
                 .or_else(|| node.attribute("l:href"))
                 .unwrap_or("");
             let image_id = href.trim_start_matches('#');
@@ -309,113 +289,76 @@ fn fb2_to_html(node: roxmltree::Node, images: &HashMap<String, String>) -> Strin
         }
 
         "epigraph" => {
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<blockquote>{}</blockquote>", content)
         }
 
         "cite" => {
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<blockquote>{}</blockquote>", content)
         }
 
         "poem" => {
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<div class=\"poem\">{}</div>", content)
         }
 
         "stanza" => {
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<div class=\"stanza\">{}</div>", content)
         }
 
         "v" => {
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<p class=\"verse\">{}</p>", content)
         }
 
         "text-author" => {
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<p class=\"text-author\">{}</p>", content)
         }
 
         "annotation" => {
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<div class=\"annotation\">{}</div>", content)
         }
 
         "a" => {
-            let href = node.attribute("href")
+            let href = node
+                .attribute("href")
                 .or_else(|| node.attribute("l:href"))
                 .unwrap_or("#");
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<a href=\"{}\">{}</a>", href, content)
         }
 
         "table" => {
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<table>{}</table>", content)
         }
 
         "tr" => {
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<tr>{}</tr>", content)
         }
 
         "th" | "td" => {
-            let content: String = node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect();
+            let content: String = node.children().map(|c| fb2_to_html(c, images)).collect();
             format!("<{}>{}</{}>", tag, content, tag)
         }
 
-        "section" => {
-            node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect()
-        }
+        "section" => node.children().map(|c| fb2_to_html(c, images)).collect(),
 
-        "body" => {
-            node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect()
-        }
+        "body" => node.children().map(|c| fb2_to_html(c, images)).collect(),
 
-        _ => {
-            node.children()
-                .map(|c| fb2_to_html(c, images))
-                .collect()
-        }
+        _ => node.children().map(|c| fb2_to_html(c, images)).collect(),
     }
 }
 
 fn extract_sections(doc: &Document<'_>, images: &HashMap<String, String>) -> Option<Vec<Chapter>> {
-    let body = doc
-        .descendants()
-        .find(|n| {
-            n.is_element()
-                && n.tag_name().name() == "body"
-                && n.attribute("name").is_none()
-        })?;
+    let body = doc.descendants().find(|n| {
+        n.is_element() && n.tag_name().name() == "body" && n.attribute("name").is_none()
+    })?;
 
     let sections: Vec<_> = body
         .children()

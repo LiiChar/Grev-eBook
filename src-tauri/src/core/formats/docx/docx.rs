@@ -1,7 +1,3 @@
-use std::collections::HashSet;
-use std::fs::File;
-use std::io::{BufReader, Read, Seek};
-use std::path::Path;
 use anyhow::{Context, Result};
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use docx_rust::document::{
@@ -9,11 +5,15 @@ use docx_rust::document::{
     TableRowContent,
 };
 use docx_rust::formatting::NumberingProperty;
-use uuid::Uuid;
-use zip::ZipArchive;
-use xmltree::Element; // Оставляем для meta и rels, если нужно
-use docx_rust::DocxFile;
 use docx_rust::Docx;
+use docx_rust::DocxFile;
+use std::collections::HashSet;
+use std::fs::File;
+use std::io::{BufReader, Read, Seek};
+use std::path::Path;
+use uuid::Uuid;
+use xmltree::Element; // Оставляем для meta и rels, если нужно
+use zip::ZipArchive;
 
 use crate::core::{
     book::model::{Book, BookMeta, Chapter},
@@ -42,7 +42,11 @@ impl BookSource for DocxLoader {
 
         // Мета
         let meta = read_core_properties(&mut archive).unwrap_or_else(|_| BookMeta {
-            title: path.file_stem().and_then(|s| s.to_str()).unwrap_or("Untitled").to_string(),
+            title: path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("Untitled")
+                .to_string(),
             author: None,
             language: None,
             cover: None,
@@ -56,10 +60,10 @@ impl BookSource for DocxLoader {
         };
 
         Ok(Book {
-            id: Uuid::new_v4().to_string(),
+            id: self.generate_id(meta.title.clone()),
             meta,
             chapters,
-            position: None
+            position: None,
         })
     }
 }
@@ -114,7 +118,12 @@ fn convert_document_to_chapters(
 
                 if is_chapter {
                     close_list(&mut current_html, &mut in_list, list_type);
-                    push_chapter(&mut chapters, &mut current_title, &mut current_html, &mut order);
+                    push_chapter(
+                        &mut chapters,
+                        &mut current_title,
+                        &mut current_html,
+                        &mut order,
+                    );
                     if !plain_text.is_empty() {
                         current_title = Some(plain_text);
                     }
@@ -155,7 +164,12 @@ fn convert_document_to_chapters(
     }
 
     close_list(&mut current_html, &mut in_list, list_type);
-    push_chapter(&mut chapters, &mut current_title, &mut current_html, &mut order);
+    push_chapter(
+        &mut chapters,
+        &mut current_title,
+        &mut current_html,
+        &mut order,
+    );
 
     if chapters.is_empty() {
         chapters.push(Chapter {
@@ -192,7 +206,11 @@ fn process_paragraph(
         if let Some(num_pr) = &ppr.numbering {
             if let Some(level) = &num_pr.level {
                 let kind = get_list_kind(docx, num_pr);
-                let lvl = if level.value < 0 { 0 } else { level.value as u8 };
+                let lvl = if level.value < 0 {
+                    0
+                } else {
+                    level.value as u8
+                };
                 list_info = Some((lvl, kind));
             }
         }
@@ -274,7 +292,7 @@ fn process_run(
                     text.push_str(&img_html);
                 }
             }
-            _ => {},
+            _ => {}
         }
     }
 
@@ -316,7 +334,11 @@ fn try_extract_image(
         _ => return Ok(None),
     };
 
-    let target = match docx.document_rels.as_ref().and_then(|r| r.get_target(embed)) {
+    let target = match docx
+        .document_rels
+        .as_ref()
+        .and_then(|r| r.get_target(embed))
+    {
         Some(t) => t,
         None => return Ok(None),
     };
@@ -349,11 +371,11 @@ fn process_table(
                                 }
                                 html.push_str("</td>\n");
                             }
-                            _ => {},
+                            _ => {}
                         }
                     }
                 }
-                _ => {},
+                _ => {}
             }
         }
         html.push_str("</tr>\n");
@@ -451,8 +473,14 @@ fn guess_mime_from_extension(path: &str) -> &'static str {
 fn read_core_properties(archive: &mut ZipArchive<impl Read + Seek>) -> Result<BookMeta> {
     // Реализация из вашего исходного кода
     let doc = read_xml(archive, "docProps/core.xml")?;
-    let title = doc.get_child("title").and_then(|e| e.get_text()).map(String::from);
-    let author = doc.get_child("creator").and_then(|e| e.get_text()).map(String::from);
+    let title = doc
+        .get_child("title")
+        .and_then(|e| e.get_text())
+        .map(String::from);
+    let author = doc
+        .get_child("creator")
+        .and_then(|e| e.get_text())
+        .map(String::from);
     Ok(BookMeta {
         title: title.unwrap_or_default(),
         author,

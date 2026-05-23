@@ -2,17 +2,17 @@ use crate::core::{
     book::model::Book,
     formats::{
         docx::DocxLoader, epub::EpubLoader, fb2::Fb2Loader, html::HtmlLoader,
-        markdown::MarkdownLoader, txt::TxtLoader,
+        markdown::MarkdownLoader, pdf::PdfLoader, txt::TxtLoader,
     },
     utils::get_files_with_extension,
 };
 
+use sha2::{Digest, Sha256};
 use tauri_plugin_log::log;
 
 use anyhow::Error;
 use std::{
-    collections::HashSet,
-    path::{Path, PathBuf},
+    collections::HashSet, path::{Path, PathBuf}
 };
 
 pub trait BookSource {
@@ -22,6 +22,15 @@ pub trait BookSource {
         Err(anyhow::anyhow!(
             "Text decoding not supported for this format"
         ))
+    }
+    fn generate_id(&self, title: String) -> String {
+        let mut hasher = Sha256::new();
+
+        hasher.update(title.as_bytes());
+
+        let result = hasher.finalize();
+
+        format!("{:x}", result)
     }
 }
 
@@ -33,6 +42,7 @@ fn available_sources() -> Vec<Box<dyn BookSource>> {
         Box::new(HtmlLoader),
         Box::new(MarkdownLoader),
         Box::new(DocxLoader),
+        Box::new(PdfLoader),
     ]
 }
 
@@ -83,7 +93,7 @@ fn collect_book_paths(path: &Path) -> Vec<PathBuf> {
     }
     log::debug!("Collecting book paths from {:?}", path);
     let extensions = [
-        "txt", "epub", "fb2", "zip", "html", "htm", "md", "markdown", "docx",
+        "txt", "epub", "fb2", "zip", "html", "htm", "md", "markdown", "docx", "pdf"
     ];
     let mut unique = HashSet::new();
     let mut result = Vec::new();

@@ -46,7 +46,7 @@ impl BookSource for TxtLoader {
                 path: path.to_string_lossy().to_string(),
             },
             chapters,
-            position: None
+            position: None,
         })
     }
 

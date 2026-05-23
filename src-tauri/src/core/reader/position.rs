@@ -5,7 +5,7 @@ pub struct ReadingPosition {
     pub chapter_id: Option<String>,
     pub anchor_text: String,
     pub before: Option<String>,
-	pub after: Option<String>
+    pub after: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]

@@ -2,7 +2,9 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Capability for the main window",
-  "windows": ["main"],
+  "windows": [
+    "main"
+  ],
   "permissions": [
 			"core:default",
 			"opener:default",
@@ -11,6 +13,23 @@
 			"log:default",
 			"core:window:default",
 			"core:window:allow-close",
-			"core:window:allow-start-dragging"
+			"core:window:allow-start-dragging",
+			"fs:default",
+			{
+				"identifier": "fs:allow-read-dir",
+				"allow": [
+					{
+						"path": "**"
+					}
+				]
+			},
+			{
+				"identifier": "fs:allow-read-file",
+				"allow": [
+					{
+						"path": "**"
+					}
+				]
+			}
 		]
 }

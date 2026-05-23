@@ -4,13 +4,16 @@ use std::{
 };
 
 use log::log;
-use tauri::{State};
+use tauri::State;
 use tauri_plugin_log::log;
 use tauri_plugin_store::StoreExt;
 
 use crate::{
     core::{
-        book::model::Book, formats::{get_book as gBook, get_books as gBooks}, reader::position, storage::{STORE_PATH, save_state}
+        book::model::Book,
+        formats::{get_book as gBook, get_books as gBooks},
+        reader::position,
+        storage::{save_state, STORE_PATH},
     },
     state::AppState,
 };
@@ -21,13 +24,18 @@ pub async fn open_book(
     state: State<'_, Arc<RwLock<AppState>>>,
     path: String,
 ) -> Result<Book, String> {
-    log::log!(log::Level::Info, "Command: open_book");
+    log::log!(log::Level::Info, "Command - book: open_book");
     let path = Path::new(&path);
 
     // --- Fast path: check if chapters already in memory ---
     {
         let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
-        if let Some(existing) = state.book.books.iter().find(|b| b.meta.path == path.to_string_lossy()) {
+        if let Some(existing) = state
+            .book
+            .books
+            .iter()
+            .find(|b| b.meta.path == path.to_string_lossy())
+        {
             if existing.chapters.as_ref().map_or(false, |c| !c.is_empty()) {
                 return Ok(existing.clone());
             }
@@ -35,13 +43,16 @@ pub async fn open_book(
     }
 
     // --- Load book ---
-    let loaded_book = gBook(path, Some(true))
-        .map_err(|e| format!("Failed to load book from path: {}", e))?;
+    let loaded_book =
+        gBook(path, Some(true)).map_err(|e| format!("Failed to load book from path: {}", e))?;
 
     // --- Update state ---
     {
         let mut state = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
-        let book_index = state.book.books.iter()
+        let book_index = state
+            .book
+            .books
+            .iter()
             .position(|b| b.meta.path == loaded_book.meta.path);
 
         match book_index {
@@ -76,13 +87,12 @@ pub async fn add_books(
     state: State<'_, Arc<RwLock<AppState>>>,
     path: &Path,
 ) -> Result<Vec<Book>, String> {
-    log::log!(log::Level::Info, "Command: add_books");
+    log::log!(log::Level::Info, "Command - book: add_books");
     let path = path.to_path_buf();
-    let books = tauri::async_runtime::spawn_blocking(move || {
-        gBooks(&path).map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| format!("Task panicked: {}", e))??;
+    let books =
+        tauri::async_runtime::spawn_blocking(move || gBooks(&path).map_err(|e| e.to_string()))
+            .await
+            .map_err(|e| format!("Task panicked: {}", e))??;
 
     let mut state = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
     state.book.books = books.clone();
@@ -105,7 +115,7 @@ pub async fn add_book(
     state: State<'_, Arc<RwLock<AppState>>>,
     path: &Path,
 ) -> Result<Vec<Book>, String> {
-    log::log!(log::Level::Info, "Command: add_book");
+    log::log!(log::Level::Info, "Command - book: add_book");
     let path = path.to_path_buf();
     let book = tauri::async_runtime::spawn_blocking(move || {
         gBook(&path, Some(false)).map_err(|e| e.to_string())
@@ -128,26 +138,30 @@ pub async fn add_book(
 }
 
 #[tauri::command]
-pub async fn get_books(
-    state: State<'_, Arc<RwLock<AppState>>>,
-) -> Result<Vec<Book>, String> {
-    log::log!(log::Level::Info, "Command: get_books");
+pub async fn get_books(state: State<'_, Arc<RwLock<AppState>>>) -> Result<Vec<Book>, String> {
+    log::log!(log::Level::Info, "Command - book: get_books");
 
     let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
     let session = state.reader.sessions.clone();
 
-    let books = state.book.books.clone().iter().map(|b| {
-        let position = session.get(&b.meta.path);
-        Book {
-            id: b.id.clone(),
-            meta: b.meta.clone(),
-            chapters: b.chapters.clone(),
-            position: match position {
-                Some(p) => Some(p.position.clone()),
-                None => None,
-            },
-        }
-    }).collect();
+    let books = state
+        .book
+        .books
+        .clone()
+        .iter()
+        .map(|b| {
+            let position = session.get(&b.meta.path);
+            Book {
+                id: b.id.clone(),
+                meta: b.meta.clone(),
+                chapters: b.chapters.clone(),
+                position: match position {
+                    Some(p) => Some(p.position.clone()),
+                    None => None,
+                },
+            }
+        })
+        .collect();
 
     Ok(books)
 }
@@ -157,13 +171,15 @@ pub async fn get_book(
     state: State<'_, Arc<RwLock<AppState>>>,
     path: String,
 ) -> Result<Book, String> {
-    log::log!(log::Level::Info, "Command: get_book");
+    log::log!(log::Level::Info, "Command - book: get_book");
 
     let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
-    let book = state.book.books.iter()
+    let book = state
+        .book
+        .books
+        .iter()
         .find(|b| b.meta.path == path)
         .cloned();
-
 
     if let Some(book) = book {
         let position = state.reader.sessions.get(&path);
@@ -201,7 +217,7 @@ pub async fn clear_store(
     app: tauri::AppHandle,
     state: State<'_, Arc<RwLock<AppState>>>,
 ) -> Result<(), String> {
-    log::log!(log::Level::Info, "Command: clear_store");
+    log::log!(log::Level::Info, "Command - book: clear_store");
 
     {
         let mut state = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
@@ -212,7 +228,9 @@ pub async fn clear_store(
     }
 
     log::info!("Store and cache cleared");
-    let store = app.store(STORE_PATH).map_err(|e| format!("Failed to open store: {}", e))?;
+    let store = app
+        .store(STORE_PATH)
+        .map_err(|e| format!("Failed to open store: {}", e))?;
     let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
     save_state(&store, &state).map_err(|e| e.to_string())?;
     Ok(())

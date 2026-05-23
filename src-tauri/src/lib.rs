@@ -7,10 +7,10 @@ use std::sync::RwLock;
 use tauri::Manager;
 
 use commands::{
-    add_book, add_bookmark, add_books, add_note, clear_store,
-    delete_bookmark, delete_note, get_book, get_bookmarks, get_books,
-    get_notes, get_reader_state, get_settings, open_book, save_reading_position,
-    get_reading_position, set_current_book, update_note, update_settings, get_bookmark
+    add_book, add_bookmark, add_books, add_note, clear_store, delete_bookmark, delete_note,
+    get_book, get_bookmark, get_bookmarks, get_books, get_notes, get_reader_state,
+    get_reading_position, get_settings, open_book, save_reading_position, set_current_book,
+    update_note, update_settings,
 };
 use tauri_plugin_store::StoreExt;
 
@@ -19,6 +19,7 @@ use core::storage::{load_state, migrate_if_needed, STORE_PATH};
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(tauri_plugin_log::log::LevelFilter::Info)
@@ -29,7 +30,6 @@ pub fn run() {
             migrate_if_needed(&store);
             let state = load_state(&store);
 
-            // Use RwLock for concurrent read-heavy access
             app.manage(Arc::new(RwLock::new(state)));
 
             Ok(())

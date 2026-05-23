@@ -38,7 +38,7 @@ impl BookSource for MarkdownLoader {
         };
 
         Ok(Book {
-            id: Uuid::new_v4().to_string(),
+            id: self.generate_id(title.clone()),
             meta: BookMeta {
                 title,
                 author: None,
@@ -47,7 +47,7 @@ impl BookSource for MarkdownLoader {
                 path: path.to_string_lossy().to_string(),
             },
             chapters: Some(vec![chapter]),
-            position: None
+            position: None,
         })
     }
 
