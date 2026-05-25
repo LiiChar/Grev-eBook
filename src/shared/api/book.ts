@@ -1,9 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { Book } from "../types/book";
-import { getFileExtension } from "../utils/file";
 
-export const getBook = async (id: string) => {
-  const book = await invoke<Book>("get_book", { id });
+export const getBook = async (path: string) => {
+  const book = await invoke<Book>("get_book", { path });
   return book;
 };
 export const getBooks = async () => {
@@ -11,14 +10,19 @@ export const getBooks = async () => {
   return books;
 };
 
+export const getBooksVersion = async (): Promise<number> => {
+  const v = await invoke<number>("get_books_version");
+  return v ?? 0;
+};
+
 export const addBooks = async (path: string) => {
-  const books = await invoke<Book[]>("add_books", { path });
+  const books = await invoke<Book[]>('add_books', { path });
   return books;
 };
 
-export const addBook = async (path: string) => {
-  const books = await invoke<Book>("add_book", { path });
-  return books;
+export const addBook = async (path: string): Promise<Book> => {
+  const res = await invoke<Book>("add_book", { path });
+  return res;
 };
 
 export const openBook = async (path: string) => {

@@ -5,7 +5,7 @@ import { useParams } from "@solidjs/router";
 import { BookPageParams } from "../../shared/types/router";
 import { Book, Chapter } from "../../shared/types/book";
 import { toast } from "../../shared/stores/toastStore";
-import { reader } from "../../shared/stores/ReaderStore";
+import { reader } from "../../shared/stores/readerStore";
 
 export  const BookView = () => {
 		const { id } = useParams<BookPageParams>();

@@ -40,27 +40,28 @@ impl BookSource for DocxLoader {
         let file = File::open(path)?;
         let mut archive = ZipArchive::new(BufReader::new(file))?;
 
-        // Мета
-        let meta = read_core_properties(&mut archive).unwrap_or_else(|_| BookMeta {
-            title: path
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .unwrap_or("Untitled")
-                .to_string(),
-            author: None,
-            language: None,
-            cover: None,
-            path: path.to_string_lossy().into_owned(),
-        });
-
         let chapters = if with_chapters {
             Some(convert_document_to_chapters(&docx, &mut archive)?)
         } else {
             None
         };
 
+        let file_title = path
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("Untitled")
+                    .to_string();
+
+        let meta = read_core_properties(&mut archive).unwrap_or_else(|_| BookMeta {
+            title: file_title,
+            author: None,
+            language: Some(self.get_language(&chapters.clone().unwrap_or(vec![])).unwrap_or("en".into())),
+            cover: None,
+            path: path.to_string_lossy().into_owned(),
+        });
+
         Ok(Book {
-            id: self.generate_id(meta.title.clone()),
+            id: self.generate_id(meta.title.clone(), path),
             meta,
             chapters,
             position: None,

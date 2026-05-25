@@ -1,92 +1,110 @@
-use std::{
-    path::Path,
-    sync::{Arc, RwLock},
-};
+use std::{collections::HashMap, path::Path};
 
-use log::log;
-use tauri::State;
-use tauri_plugin_log::log;
+use tauri::{AppHandle, Emitter};
 use tauri_plugin_store::StoreExt;
 
 use crate::{
     core::{
         book::model::Book,
         formats::{get_book as gBook, get_books as gBooks},
-        reader::position,
-        storage::{save_state, STORE_PATH},
+        storage::{load_state, save_state, STORE_PATH},
     },
-    state::AppState,
 };
 
+fn now_ts() -> i64 {
+    match std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH) {
+        Ok(d) => d.as_millis() as i64,
+        Err(_) => 0,
+    }
+}
+
+fn merge_books(existing_books: &mut Vec<Book>, incoming_books: Vec<Book>) {
+    let mut existing_by_id = existing_books
+        .iter()
+        .cloned()
+        .map(|b| (b.id.clone(), b))
+        .collect::<HashMap<_, _>>();
+    let mut existing_by_path = existing_books
+        .iter()
+        .map(|b| (b.meta.path.clone(), b.id.clone()))
+        .collect::<HashMap<_, _>>();
+
+    let mut merged = Vec::with_capacity(existing_books.len() + incoming_books.len());
+
+    for mut book in incoming_books {
+        let existing_id = existing_by_path
+            .remove(&book.meta.path)
+            .or_else(|| existing_by_id.get(&book.id).map(|_| book.id.clone()));
+
+        if let Some(id) = existing_id {
+            if let Some(old) = existing_by_id.remove(&id) {
+                book.id = old.id.clone();
+                if book.chapters.as_ref().map(|c| c.is_empty()).unwrap_or(true) {
+                    book.chapters = old.chapters;
+                }
+            }
+        }
+
+        merged.push(book);
+    }
+
+    merged.extend(existing_by_id.into_values());
+    *existing_books = merged;
+}
+
 #[tauri::command]
-pub async fn open_book(
-    app: tauri::AppHandle,
-    state: State<'_, Arc<RwLock<AppState>>>,
-    path: String,
-) -> Result<Book, String> {
+pub async fn open_book(app: AppHandle, path: String) -> Result<Book, String> {
     log::log!(log::Level::Info, "Command - book: open_book");
     let path = Path::new(&path);
+    // --- Load persisted state from store ---
+    let store = app.store(STORE_PATH).map_err(|e| format!("Failed to open store: {}", e))?;
+    let mut state = load_state(&store);
 
-    // --- Fast path: check if chapters already in memory ---
+    // Fast path: if already loaded with chapters, return
+    if let Some(existing) = state
+        .book
+        .books
+        .iter()
+        .find(|b| b.meta.path == path.to_string_lossy())
     {
-        let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
-        if let Some(existing) = state
-            .book
-            .books
-            .iter()
-            .find(|b| b.meta.path == path.to_string_lossy())
-        {
-            if existing.chapters.as_ref().map_or(false, |c| !c.is_empty()) {
-                return Ok(existing.clone());
-            }
+        if existing.chapters.as_ref().map_or(false, |c| !c.is_empty()) {
+            return Ok(existing.clone());
         }
     }
 
-    // --- Load book ---
-    let loaded_book =
-        gBook(path, Some(true)).map_err(|e| format!("Failed to load book from path: {}", e))?;
+    // Load book from disk (may be heavy)
+    let loaded_book = gBook(path, Some(true)).map_err(|e| format!("Failed to load book from path: {}", e))?;
 
-    // --- Update state ---
-    {
-        let mut state = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
-        let book_index = state
-            .book
-            .books
-            .iter()
-            .position(|b| b.meta.path == loaded_book.meta.path);
+    // Update persisted state immediately
+    let book_index = state
+        .book
+        .books
+        .iter()
+        .position(|b| b.meta.path == loaded_book.meta.path);
 
-        match book_index {
-            Some(idx) => {
-                let mut updated = loaded_book.clone();
-                updated.id = state.book.books[idx].id.clone();
-                state.book.books[idx] = updated;
-            }
-            None => {
-                state.book.books.push(loaded_book.clone());
-            }
+    match book_index {
+        Some(idx) => {
+            let mut updated = loaded_book.clone();
+            updated.id = state.book.books[idx].id.clone();
+            state.book.books[idx] = updated;
+        }
+        None => {
+            state.book.books.push(loaded_book.clone());
         }
     }
-    let state_clone = {
-        let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
-        state.clone()
-    };
 
-    let app_clone = app.clone();
-    tauri::async_runtime::spawn(async move {
-        if let Ok(store) = app_clone.store(STORE_PATH) {
-            let _ = save_state(&store, &state_clone);
-        }
-    });
+    save_state(&store, &state).map_err(|e| e.to_string())?;
+    // update books version
+    let ver = now_ts();
+    let _ = store.set("books_version", serde_json::to_value(ver).unwrap());
+    let _ = store.save();
+    let _ = app.emit("books:changed", Some(ver));
 
     Ok(loaded_book)
 }
 
 #[tauri::command]
-pub async fn add_books(
-    app: tauri::AppHandle,
-    state: State<'_, Arc<RwLock<AppState>>>,
-    path: &Path,
-) -> Result<Vec<Book>, String> {
+pub async fn add_books(app: AppHandle, path: &Path) -> Result<Vec<Book>, String> {
     log::log!(log::Level::Info, "Command - book: add_books");
     let path = path.to_path_buf();
     let books =
@@ -94,27 +112,20 @@ pub async fn add_books(
             .await
             .map_err(|e| format!("Task panicked: {}", e))??;
 
-    let mut state = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
-    state.book.books = books.clone();
-
-    // Persist asynchronously
-    let state_clone = state.clone();
-    let app_clone = app.clone();
-    tauri::async_runtime::spawn(async move {
-        if let Ok(store) = app_clone.store(STORE_PATH) {
-            let _ = save_state(&store, &state_clone);
-        }
-    });
+    let store = app.store(STORE_PATH).map_err(|e| format!("Failed to open store: {}", e))?;
+    let mut state = load_state(&store);
+    merge_books(&mut state.book.books, books.clone());
+    save_state(&store, &state).map_err(|e| e.to_string())?;
+    let ver = now_ts();
+    let _ = store.set("books_version", serde_json::to_value(ver).unwrap());
+    let _ = store.save();
+    let _ = app.emit("books:changed", Some(ver));
 
     Ok(books)
 }
 
 #[tauri::command]
-pub async fn add_book(
-    app: tauri::AppHandle,
-    state: State<'_, Arc<RwLock<AppState>>>,
-    path: &Path,
-) -> Result<Vec<Book>, String> {
+pub async fn add_book(app: AppHandle, path: &Path) -> Result<Book, String> {
     log::log!(log::Level::Info, "Command - book: add_book");
     let path = path.to_path_buf();
     let book = tauri::async_runtime::spawn_blocking(move || {
@@ -123,25 +134,38 @@ pub async fn add_book(
     .await
     .map_err(|e| format!("Task panicked: {}", e))??;
 
-    let mut state = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
-    state.book.books.push(book.clone());
-
-    let state_clone = state.clone();
-    let app_clone = app.clone();
-    tauri::async_runtime::spawn(async move {
-        if let Ok(store) = app_clone.store(STORE_PATH) {
-            let _ = save_state(&store, &state_clone);
-        }
+    let store = app.store(STORE_PATH).map_err(|e| format!("Failed to open store: {}", e))?;
+    let mut state = load_state(&store);
+    let existing_index = state.book.books.iter().position(|b| {
+        b.meta.path == book.meta.path || b.id == book.id
     });
 
-    Ok(state.book.books.clone())
+    let result = if let Some(idx) = existing_index {
+        let mut updated = book.clone();
+        updated.id = state.book.books[idx].id.clone();
+        state.book.books[idx] = updated.clone();
+        updated
+    } else {
+        state.book.books.push(book.clone());
+        book.clone()
+    };
+
+    save_state(&store, &state).map_err(|e| e.to_string())?;
+    let ver = now_ts();
+    let _ = store.set("books_version", serde_json::to_value(ver).unwrap());
+    let _ = store.save();
+    let _ = app.emit("books:changed", Some(ver));
+
+    // Return the added or updated book (no reading position yet)
+    Ok(result)
 }
 
 #[tauri::command]
-pub async fn get_books(state: State<'_, Arc<RwLock<AppState>>>) -> Result<Vec<Book>, String> {
+pub async fn get_books(app: AppHandle) -> Result<Vec<Book>, String> {
     log::log!(log::Level::Info, "Command - book: get_books");
 
-    let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
+    let store = app.store(STORE_PATH).map_err(|e| format!("Failed to open store: {}", e))?;
+    let state = load_state(&store);
     let session = state.reader.sessions.clone();
 
     let books = state
@@ -166,14 +190,25 @@ pub async fn get_books(state: State<'_, Arc<RwLock<AppState>>>) -> Result<Vec<Bo
     Ok(books)
 }
 
+#[allow(dead_code)]
 #[tauri::command]
-pub async fn get_book(
-    state: State<'_, Arc<RwLock<AppState>>>,
-    path: String,
-) -> Result<Book, String> {
+pub async fn get_books_version(app: AppHandle) -> Result<i64, String> {
+    let store = app.store(STORE_PATH).map_err(|e| format!("Failed to open store: {}", e))?;
+    match store.get("books_version") {
+        Some(v) => match serde_json::from_value::<i64>(v) {
+            Ok(n) => Ok(n),
+            Err(_) => Ok(0),
+        },
+        None => Ok(0),
+    }
+}
+
+#[tauri::command]
+pub async fn get_book(app: AppHandle, path: String) -> Result<Book, String> {
     log::log!(log::Level::Info, "Command - book: get_book");
 
-    let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
+    let store = app.store(STORE_PATH).map_err(|e| format!("Failed to open store: {}", e))?;
+    let state = load_state(&store);
     let book = state
         .book
         .books
@@ -213,25 +248,21 @@ pub async fn get_book(
 }
 
 #[tauri::command]
-pub async fn clear_store(
-    app: tauri::AppHandle,
-    state: State<'_, Arc<RwLock<AppState>>>,
-) -> Result<(), String> {
+pub async fn clear_store(app: tauri::AppHandle) -> Result<(), String> {
     log::log!(log::Level::Info, "Command - book: clear_store");
 
-    {
-        let mut state = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
-        state.book.books.clear();
-        state.bookmarks.items.clear();
-        state.reader.sessions.clear();
-        state.notes.items.clear();
-    }
+    let store = app.store(STORE_PATH).map_err(|e| format!("Failed to open store: {}", e))?;
+    let mut state = load_state(&store);
+    state.book.books.clear();
+    state.bookmarks.items.clear();
+    state.reader.sessions.clear();
+    state.notes.items.clear();
 
     log::info!("Store and cache cleared");
-    let store = app
-        .store(STORE_PATH)
-        .map_err(|e| format!("Failed to open store: {}", e))?;
-    let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
     save_state(&store, &state).map_err(|e| e.to_string())?;
+    let ver = now_ts();
+    let _ = store.set("books_version", serde_json::to_value(ver).unwrap());
+    let _ = store.save();
+    let _ = app.emit("books:changed", Some(ver));
     Ok(())
 }

@@ -1,6 +1,4 @@
-use std::sync::{Arc, RwLock};
-
-use tauri::{AppHandle, State};
+use tauri::AppHandle;
 use tauri_plugin_store::StoreExt;
 
 use crate::{
@@ -8,7 +6,7 @@ use crate::{
         reader::{
             Bookmark, BookmarkKind, Note, ReaderMode, ReadingPosition, ReadingSession, TextRange,
         },
-        storage::{save_state, STORE_PATH},
+        storage::{load_state, save_state, STORE_PATH},
     },
     state::{AppState, ReaderState, SettingStore},
 };
@@ -16,88 +14,69 @@ use crate::{
 /// ---------- reader ----------
 
 #[tauri::command]
-pub async fn get_reader_state(
-    state: State<'_, Arc<RwLock<AppState>>>,
-) -> Result<ReaderState, String> {
+pub async fn get_reader_state(app: AppHandle) -> Result<ReaderState, String> {
     log::log!(log::Level::Info, "Command - reader: get_reader_state");
-
-    let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
+    let store = app.store(STORE_PATH).map_err(|e| e.to_string())?;
+    let state = load_state(&store);
     Ok(state.reader.clone())
 }
 
 #[tauri::command]
 pub async fn set_current_book(
     app: AppHandle,
-    state: State<'_, Arc<RwLock<AppState>>>,
     book_path: String,
 ) -> Result<ReaderState, String> {
     log::log!(log::Level::Info, "Command - reader: set_current_book");
     let now = now_ts();
-    let cloned_state = {
-        let mut state_guard = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
+    let store = app.store(STORE_PATH).map_err(|e| e.to_string())?;
+    let mut state = load_state(&store);
 
-        state_guard.reader.current_book_path = Some(book_path.clone());
-        state_guard.reader.last_session_book_path = Some(book_path.clone());
+    state.reader.current_book_path = Some(book_path.clone());
+    state.reader.last_session_book_path = Some(book_path.clone());
 
-        state_guard
-            .reader
-            .sessions
-            .entry(book_path.clone())
-            .and_modify(|s| s.last_opened_at = now)
-            .or_insert_with(|| {
-                ReadingSession::new(
-                    book_path,
-                    ReadingPosition::default(),
-                    ReaderMode::default(),
-                    now,
-                )
-            });
+    state
+        .reader
+        .sessions
+        .entry(book_path.clone())
+        .and_modify(|s| s.last_opened_at = now)
+        .or_insert_with(|| ReadingSession::new(book_path, ReadingPosition::default(), ReaderMode::default(), now));
 
-        state_guard.clone()
-    };
-    persist(&app, &cloned_state).await?;
-    Ok(cloned_state.reader)
+    save_state(&store, &state).map_err(|e| e.to_string())?;
+    Ok(state.reader)
 }
 
 #[tauri::command]
 pub async fn save_reading_position(
     app: AppHandle,
-    state: State<'_, Arc<RwLock<AppState>>>,
     book_path: String,
     position: ReadingPosition,
     mode: ReaderMode,
 ) -> Result<ReaderState, String> {
     log::log!(log::Level::Info, "Command - reader: save_reading_position");
     let now = now_ts();
+    let store = app.store(STORE_PATH).map_err(|e| e.to_string())?;
+    let mut state = load_state(&store);
 
-    let reader_state = {
-        let mut state = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
+    state
+        .reader
+        .sessions
+        .entry(book_path.clone())
+        .and_modify(|s| {
+            s.position = position.clone();
+            s.mode = mode.clone();
+            s.last_read_at = now;
+        })
+        .or_insert_with(|| ReadingSession::new(book_path, position, mode, now));
 
-        state
-            .reader
-            .sessions
-            .entry(book_path.clone())
-            .and_modify(|s| {
-                s.position = position.clone();
-                s.mode = mode.clone();
-                s.last_read_at = now;
-            })
-            .or_insert_with(|| ReadingSession::new(book_path, position, mode, now));
-
-        state.clone()
-    };
-
-    persist(&app, &reader_state).await?;
-    Ok(reader_state.reader)
+    save_state(&store, &state).map_err(|e| e.to_string())?;
+    Ok(state.reader)
 }
 
 #[tauri::command]
-pub async fn get_reading_position(
-    state: State<'_, Arc<RwLock<AppState>>>,
-    book_path: String,
-) -> Result<ReadingPosition, String> {
+pub async fn get_reading_position(app: AppHandle, book_path: String) -> Result<ReadingPosition, String> {
     log::log!(log::Level::Info, "Command - reader: get_reading_position");
-    let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
+    let store = app.store(STORE_PATH).map_err(|e| e.to_string())?;
+    let state = load_state(&store);
 
     let reader_position = state.reader.sessions.get(&book_path);
 
@@ -112,7 +91,6 @@ pub async fn get_reading_position(
 #[tauri::command]
 pub async fn add_bookmark(
     app: AppHandle,
-    state: State<'_, Arc<RwLock<AppState>>>,
     book_path: String,
     position: ReadingPosition,
     preview: String,
@@ -120,25 +98,20 @@ pub async fn add_bookmark(
 ) -> Result<Bookmark, String> {
     log::log!(log::Level::Info, "Command - reader: add_bookmark");
     let now = now_ts();
-    let (bookmark, cloned_state) = {
-        let mut state_guard = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
+    let store = app.store(STORE_PATH).map_err(|e| e.to_string())?;
+    let mut state = load_state(&store);
 
-        let bookmark = Bookmark::new(book_path, position, preview, kind, now);
-        state_guard.bookmarks.items.push(bookmark.clone());
-
-        (bookmark, state_guard.clone())
-    };
-    persist(&app, &cloned_state).await?;
+    let bookmark = Bookmark::new(book_path, position, preview, kind, now);
+    state.bookmarks.items.push(bookmark.clone());
+    save_state(&store, &state).map_err(|e| e.to_string())?;
     Ok(bookmark)
 }
 
 #[tauri::command]
-pub async fn get_bookmarks(
-    state: State<'_, Arc<RwLock<AppState>>>,
-    book_path: Option<String>,
-) -> Result<Vec<Bookmark>, String> {
+pub async fn get_bookmarks(app: AppHandle, book_path: Option<String>) -> Result<Vec<Bookmark>, String> {
     log::log!(log::Level::Info, "Command - reader: get_bookmarks");
-    let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
+    let store = app.store(STORE_PATH).map_err(|e| e.to_string())?;
+    let state = load_state(&store);
 
     Ok(state
         .bookmarks
@@ -153,12 +126,10 @@ pub async fn get_bookmarks(
 }
 
 #[tauri::command]
-pub async fn get_bookmark(
-    state: State<'_, Arc<RwLock<AppState>>>,
-    bookmark_id: Option<String>,
-) -> Result<Option<Bookmark>, String> {
+pub async fn get_bookmark(app: AppHandle, bookmark_id: Option<String>) -> Result<Option<Bookmark>, String> {
     log::log!(log::Level::Info, "Command - reader: get_bookmark");
-    let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
+    let store = app.store(STORE_PATH).map_err(|e| e.to_string())?;
+    let state = load_state(&store);
 
     Ok(state
         .bookmarks
@@ -172,19 +143,13 @@ pub async fn get_bookmark(
 }
 
 #[tauri::command]
-pub async fn delete_bookmark(
-    app: AppHandle,
-    state: State<'_, Arc<RwLock<AppState>>>,
-    bookmark_id: String,
-) -> Result<(), String> {
+pub async fn delete_bookmark(app: AppHandle, bookmark_id: String) -> Result<(), String> {
     log::log!(log::Level::Info, "Command - reader: delete_bookmark");
-    let cloned_state = {
-        let mut state_guard = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
+    let store = app.store(STORE_PATH).map_err(|e| e.to_string())?;
+    let mut state = load_state(&store);
 
-        state_guard.bookmarks.items.retain(|b| b.id != bookmark_id);
-        state_guard.clone()
-    };
-    persist(&app, &cloned_state).await?;
+    state.bookmarks.items.retain(|b| b.id != bookmark_id);
+    save_state(&store, &state).map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -193,7 +158,6 @@ pub async fn delete_bookmark(
 #[tauri::command]
 pub async fn add_note(
     app: AppHandle,
-    state: State<'_, Arc<RwLock<AppState>>>,
     book_path: String,
     range: TextRange,
     text: String,
@@ -203,30 +167,18 @@ pub async fn add_note(
 ) -> Result<Note, String> {
     log::log!(log::Level::Info, "Command - reader: add_note");
     let now = now_ts();
-    let (note, cloned_state) = {
-        let mut state_guard = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
+    let store = app.store(STORE_PATH).map_err(|e| e.to_string())?;
+    let mut state = load_state(&store);
 
-        let note = Note::new(
-            book_path,
-            range,
-            text,
-            preview,
-            highlight,
-            highlight_color,
-            now,
-        );
-        state_guard.notes.items.push(note.clone());
-
-        (note, state_guard.clone())
-    };
-    persist(&app, &cloned_state).await?;
+    let note = Note::new(book_path, range, text, preview, highlight, highlight_color, now);
+    state.notes.items.push(note.clone());
+    save_state(&store, &state).map_err(|e| e.to_string())?;
     Ok(note)
 }
 
 #[tauri::command]
 pub async fn update_note(
     app: AppHandle,
-    state: State<'_, Arc<RwLock<AppState>>>,
     note_id: String,
     range: TextRange,
     text: String,
@@ -235,52 +187,42 @@ pub async fn update_note(
 ) -> Result<Note, String> {
     log::log!(log::Level::Info, "Command - reader: update_note");
     let now = now_ts();
-    let (updated, cloned_state) = {
-        let mut state_guard = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
+    let store = app.store(STORE_PATH).map_err(|e| e.to_string())?;
+    let mut state = load_state(&store);
 
-        let note = state_guard
-            .notes
-            .items
-            .iter_mut()
-            .find(|n| n.id == note_id)
-            .ok_or("Note not found")?;
+    let note = state
+        .notes
+        .items
+        .iter_mut()
+        .find(|n| n.id == note_id)
+        .ok_or("Note not found")?;
 
-        note.range = range;
-        note.text = text;
-        note.highlight = highlight;
-        note.highlight_color = highlight_color;
-        note.updated_at = now;
+    note.range = range;
+    note.text = text;
+    note.highlight = highlight;
+    note.highlight_color = highlight_color;
+    note.updated_at = now;
 
-        let updated = note.clone();
-        (updated, state_guard.clone())
-    };
-    persist(&app, &cloned_state).await?;
+    let updated = note.clone();
+    save_state(&store, &state).map_err(|e| e.to_string())?;
     Ok(updated)
 }
 
 #[tauri::command]
-pub async fn delete_note(
-    app: AppHandle,
-    state: State<'_, Arc<RwLock<AppState>>>,
-    note_id: String,
-) -> Result<(), String> {
+pub async fn delete_note(app: AppHandle, note_id: String) -> Result<(), String> {
     log::log!(log::Level::Info, "Command - reader: delete_note");
-    let cloned_state = {
-        let mut state_guard = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
-        state_guard.notes.items.retain(|n| n.id != note_id);
-        state_guard.clone()
-    };
-    persist(&app, &cloned_state).await?;
+    let store = app.store(STORE_PATH).map_err(|e| e.to_string())?;
+    let mut state = load_state(&store);
+    state.notes.items.retain(|n| n.id != note_id);
+    save_state(&store, &state).map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn get_notes(
-    state: State<'_, Arc<RwLock<AppState>>>,
-    book_path: Option<String>,
-) -> Result<Vec<Note>, String> {
+pub async fn get_notes(app: AppHandle, book_path: Option<String>) -> Result<Vec<Note>, String> {
     log::log!(log::Level::Info, "Command - reader: get_notes");
-    let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
+    let store = app.store(STORE_PATH).map_err(|e| e.to_string())?;
+    let state = load_state(&store);
 
     Ok(state
         .notes
@@ -297,33 +239,28 @@ pub async fn get_notes(
 /// ---------- settings ----------
 
 #[tauri::command]
-pub async fn get_settings(state: State<'_, Arc<RwLock<AppState>>>) -> Result<SettingStore, String> {
+pub async fn get_settings(app: AppHandle) -> Result<SettingStore, String> {
     log::log!(log::Level::Info, "Command - reader: get_settings");
-    let state = state.read().map_err(|e| format!("Lock poisoned: {}", e))?;
+    let store = app.store(STORE_PATH).map_err(|e| e.to_string())?;
+    let state = load_state(&store);
     Ok(state.setting.clone())
 }
 
 #[tauri::command]
-pub async fn update_settings(
-    app: AppHandle,
-    state: State<'_, Arc<RwLock<AppState>>>,
-    settings: SettingStore,
-) -> Result<SettingStore, String> {
+pub async fn update_settings(app: AppHandle, settings: SettingStore) -> Result<SettingStore, String> {
     log::log!(log::Level::Info, "Command - reader: update_settings");
-    let cloned_state = {
-        let mut state_guard = state.write().map_err(|e| format!("Lock poisoned: {}", e))?;
-        state_guard.setting = settings;
-        state_guard.clone()
-    };
-    persist(&app, &cloned_state).await?;
-    Ok(cloned_state.setting)
+    let store = app.store(STORE_PATH).map_err(|e| e.to_string())?;
+    let mut state = load_state(&store);
+    state.setting = settings;
+    save_state(&store, &state).map_err(|e| e.to_string())?;
+    Ok(state.setting)
 }
 
 /// ---------- helpers ----------
 
-async fn persist(app: &AppHandle, state: &AppState) -> Result<(), String> {
-    let store = app.store(STORE_PATH).map_err(|e| e.to_string())?;
-    save_state(&store, state)
+async fn persist(_app: &AppHandle, _state: &AppState) -> Result<(), String> {
+    // persist is no-op now; commands save directly to the store.
+    Ok(())
 }
 
 fn now_ts() -> i64 {

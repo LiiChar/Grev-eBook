@@ -2,6 +2,10 @@
    READER CORE STYLES
 ====================================================== */
 
+body:has(.reader) .bottom-navbar {
+  display: none;
+}
+
 .reader {
   font-family: var(--font-reader);
   font-size: var(--reader-font-size, 18px);
@@ -12,46 +16,48 @@
   margin-inline: auto;
 }
 
+
+.reader:has(.chapter-pdf) {
+  padding: 0 !important;
+}
+
+.reader-wrapper:has(.chapter-pdf) {
+  padding: 0 !important;
+}
+
 /* Paragraphs - more airy */
-.reader p,
 .chapter p {
   margin-bottom: 0.2em;
   text-indent: 1.5em;
 }
 
 
-.reader p:last-child,
 .chapter p:last-child {
   margin-bottom: 0;
 }
 
 /* Empty paragraphs */
-.reader p:empty,
 .chapter p:empty {
   display: none;
 }
 
 /* Remove excessive breaks */
-.reader div br:nth-child(1),
 .chapter div br:nth-child(2),
-.reader div br:nth-last-child(1),
 .chapter div br:nth-last-child(2),
 .chapter div br:nth-last-child(3)
  {
   display: none;
 }
 
-.reader div br, .chapter div br {
+.chapter div br {
   height: 0px;
 }
 
-.reader blockquote, .chapter blockquote div {
+.chapter blockquote div {
   text-align: start;
 }
 
 /* Headings */
-.reader h1,
-.reader h2,
 .chapter h1,
 .chapter h2 {
   font-family: var(--font-ui) !important;
@@ -66,26 +72,23 @@
   border-bottom: 1px solid var(--border) !important;
 }
 
-.reader h1, .chapter h1 { font-size: 2.5em; text-align: center; }
-.reader h2, .chapter h2 { font-size: 2em; text-align: center; padding-bottom: 0.2em; }
-.reader h3, .chapter h3 { font-size: 1.45em; }
-.reader h4, .chapter h4 { font-size: 1em; }
+.chapter h1 { font-size: 2.5em; text-align: center; }
+.chapter h2 { font-size: 2em; text-align: center; padding-bottom: 0.2em; }
+.chapter h3 { font-size: 1.45em; }
+.chapter h4 { font-size: 1em; }
 
-.reader div:has(> img) {
+.chapter div:has(> img) {
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-.reader h1 p,
-.reader h2 p,
 .chapter h1 p,
 .chapter h2 p {
   margin-bottom: 6px !important;
 }
 
 /* Links */
-.reader a,
 .chapter a {
   color: var(--primary);
   text-decoration: underline;
@@ -94,13 +97,11 @@
   transition: color 0.15s ease;
 }
 
-.reader a:hover,
 .chapter a:hover {
   color: var(--primary-hover);
 }
 
 /* Blockquotes - fixed styling */
-.reader blockquote,
 .chapter blockquote {
   display: block;
   border-left: 3px solid var(--primary);
@@ -110,7 +111,6 @@
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
-.reader blockquote p,
 .chapter blockquote p {
   text-indent: 0;
   margin-bottom: 0.4em;
@@ -118,17 +118,15 @@
   color: var(--foreground);
 }
 
-.reader blockquote p:last-child,
 .chapter blockquote p:last-child {
   margin-bottom: 0;
 }
 
-.reader blockquote div,
 .chapter blockquote div {
   font-style: italic;
 }
 
-.reader .poem .stanza {
+.chapter .poem .stanza {
     display: block;
   border-left: 3px solid var(--primary);
   padding: 0.5em 0 0.5em 0em;
@@ -139,22 +137,18 @@
 }
 
 /* Lists */
-.reader ul,
-.reader ol,
 .chapter ul,
 .chapter ol {
   padding-left: 1.5em;
   margin-bottom: 0.8em;
 }
 
-.reader li,
 .chapter li {
   margin-bottom: 0.2em;
   text-indent: 0;
 }
 
 /* Horizontal rule */
-.reader hr,
 .chapter hr {
   border: none;
   border-top: 1px solid var(--border);
@@ -162,7 +156,6 @@
 }
 
 /* Code */
-.reader code,
 .chapter code {
   font-family: var(--font-mono);
   font-size: 0.85em;
@@ -171,7 +164,6 @@
   border-radius: 3px;
 }
 
-.reader pre,
 .chapter pre {
   background: var(--surface);
   padding: 0.8em 1em;
@@ -181,14 +173,12 @@
   border: 1px solid var(--border);
 }
 
-.reader pre code,
 .chapter pre code {
   background: none;
   padding: 0;
 }
 
 /* Images */
-.reader img,
 .chapter img {
   max-width: 100%;
   height: auto;
@@ -197,7 +187,6 @@
 }
 
 /* Tables */
-.reader table,
 .chapter table {
   width: 100%;
   border-collapse: collapse;
@@ -205,8 +194,6 @@
   font-size: 0.9em;
 }
 
-.reader th,
-.reader td,
 .chapter th,
 .chapter td {
   padding: 0.4em 0.6em;
@@ -214,14 +201,12 @@
   text-align: left;
 }
 
-.reader th,
 .chapter th {
   background: var(--surface);
   font-weight: 600;
 }
 
 /* Selection */
-.reader ::selection,
 .chapter ::selection {
   background: var(--primary);
   color: var(--primary-foreground);

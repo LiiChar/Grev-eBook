@@ -4,6 +4,7 @@ import Button from "../../shared/ui/Button";
 import Modal from "../../shared/ui/Modal";
 import { toast } from "../../shared/stores/toastStore";
 import { addBooks, getBooks } from "../../shared/api/book";
+import { mergeBooksById } from "../../shared/stores/readerStore";
 import { createSignal, onMount } from "solid-js";
 import { Book } from "../../shared/types/book";
 
@@ -35,9 +36,8 @@ export const Books = () => {
 
 		try {
 			const newBooks = await addBooks(file);
-      console.log(newBooks);
-      
-			setBooks(newBooks);
+			console.log(newBooks);
+			setBooks(prev => mergeBooksById(prev, newBooks));
 			setIsModalOpen(false);
 		} catch (err) {
 			toast.error('Ошибка при добавлении книг');

@@ -28,7 +28,7 @@ pub fn run() {
         .setup(|app| {
             let store = app.store(STORE_PATH)?;
             migrate_if_needed(&store);
-            let state = load_state(&store);
+            let state: state::AppState = load_state(&store);
 
             app.manage(Arc::new(RwLock::new(state)));
 

@@ -30,6 +30,7 @@ export const MobileNav = () => {
 	return (
 		<nav
 			class='
+				bottom-navbar
 				fixed bottom-2 left-0 right-0 z-50
 				flex items-center justify-center
 				min-[500px]:hidden

@@ -46,38 +46,28 @@ export function ReaderToolbar(props: ReaderToolbarProps) {
 
 	const [percent, setPercent] = createSignal(0);
 
+
 	let interval: number;
-	onMount(async () => {
+	onMount(() => {
 		if (!props.book.chapters?.length) return;
 
-		let pos = props.book.position ?? null;
-
-		if (!pos) {
-			pos = await getReadingPosition(props.book.meta.path);
-		}
+		const pos = props.book.position ?? null;
 		if (!pos?.anchor_text) return;
 
 		const chaptersText = props.book.chapters.map(c => stripHtml(c.html));
-
 		const fullText = chaptersText.join('\n');
 		const anchor = pos.anchor_text.trim();
-
 		const index = fullText.indexOf(anchor);
 		if (index < 0) return;
-
 		const value = Math.round((index / fullText.length) * 100);
-
 		setPercent(Math.min(Math.max(value, 1), 100));
 
 		interval = setInterval(() => {
-			setPercent(Math.min(Math.max(value + 1, 1), 100));
+			setPercent(p => Math.min(Math.max(p + 1, 1), 100));
 		}, 100);
-
 	});
 
-	onCleanup(() => {
-		clearInterval(interval);
-	})
+	onCleanup(() => clearInterval(interval));
 
 	
 
@@ -91,9 +81,9 @@ export function ReaderToolbar(props: ReaderToolbarProps) {
       `}
 			>
 				{/* Left */}
-				<div class='flex items-center gap-2 border-[var(--border)]  rounded-lg px-2 pr-4 backdrop-blur-md bg-(--background)/40'>
-					<GlassButton size='icon' variant='ghost' onClick={props.onNavigateBack}>
-						<Icon name='chevronLeft' size={18} />
+				<div class='flex items-center gap-2 border-[var(--border)]  rounded-lg p-0 sm:px-2 sm:pr-4 backdrop-blur-md bg-(--background)/40'>
+					<GlassButton size='icon' variant='ghost' class="rounded-lg!" onClick={props.onNavigateBack}>
+						<Icon name='chevronLeft' size={18} class="-ml-0.5" />
 					</GlassButton>
 					<div class='hidden sm:block'>{props.book.meta.title}</div>
 				</div>
@@ -101,7 +91,7 @@ export function ReaderToolbar(props: ReaderToolbarProps) {
 				{/* Right */}
 				<div class='flex items-center gap-0 border-[var(--border)]  rounded-lg overflow-hidden  backdrop-blur-md bg-(--background)/40 relative'>
 					<div
-						class='absolute top-0 left-0 h-full bg-(--background)/80 transition'
+						class='absolute -z-1 top-0 left-0 h-full bg-(--background)/60 transition'
 						style={{ width: percent() + '%' }}
 					/>
 					<div class='relative'>

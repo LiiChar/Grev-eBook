@@ -16,9 +16,9 @@
     "@solidjs/router": "^0.15.4",
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.1.18",
-    "@tanstack/solid-virtual": "^3.13.25",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-dialog": "~2",
+    "@tauri-apps/plugin-fs": "^2.5.1",
     "@tauri-apps/plugin-log": "~2",
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-store": "~2",
@@ -29,6 +29,7 @@
     "solid-js": "^1.9.3",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.1.18",
+    "tauri-plugin-android-fs-api": "28.1.0",
     "virtua": "^0.48.3"
   },
   "devDependencies": {

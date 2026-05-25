@@ -60,28 +60,20 @@ export const BookCardGrid = (props: BookCardProps) => {
 
 	const [percent, setPercent] = createSignal(0);
 
-	onMount(async () => {
-		if (!props.book.chapters?.length) return;
+		onMount(() => {
+			if (!props.book.chapters?.length) return;
 
-		let pos = props.book.position ?? null;
+			const pos = props.book.position ?? null;
+			if (!pos?.anchor_text) return;
 
-		if (!pos) {
-			pos = await getReadingPosition(props.book.meta.path);
-		}
-		if (!pos?.anchor_text) return;
-
-		const chaptersText = props.book.chapters.map(c => stripHtml(c.html));
-
-		const fullText = chaptersText.join('\n');
-		const anchor = pos.anchor_text.trim();
-
-		const index = fullText.indexOf(anchor);
-		if (index < 0) return;
-
-		const value = Math.round((index / fullText.length) * 100);
-
-		setPercent(Math.min(Math.max(value, 1), 100));
-	});
+			const chaptersText = props.book.chapters.map(c => stripHtml(c.html));
+			const fullText = chaptersText.join('\n');
+			const anchor = pos.anchor_text.trim();
+			const index = fullText.indexOf(anchor);
+			if (index < 0) return;
+			const value = Math.round((index / fullText.length) * 100);
+			setPercent(Math.min(Math.max(value, 1), 100));
+		});
 
 	return (
 		<div
@@ -172,27 +164,16 @@ export const BookCardList = (props: BookCardProps) => {
 
 
 
-	onMount(async () => {
+	onMount(() => {
 		if (!props.book.chapters?.length) return;
-
-		let pos = props.book.position ?? null;
-
-		if (!pos) {
-			pos = await getReadingPosition(props.book.meta.path);
-		}
-
+		const pos = props.book.position ?? null;
 		if (!pos?.anchor_text) return;
-
 		const chaptersText = props.book.chapters.map(c => stripHtml(c.html));
-
 		const fullText = chaptersText.join('\n');
 		const anchor = pos.anchor_text.trim();
-
 		const index = fullText.indexOf(anchor);
 		if (index < 0) return;
-
 		const value = Math.round((index / fullText.length) * 100);
-
 		setPercent(Math.min(Math.max(value, 1), 100));
 	});
 
@@ -243,6 +224,7 @@ export const BookCardList = (props: BookCardProps) => {
 							/>
 						)}
 						src={coverUrl()!}
+						loading='lazy'
 						alt=''
 						class='w-full h-full object-cover'
 					/>

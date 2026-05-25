@@ -40,26 +40,27 @@ impl BookSource for Fb2Loader {
 
         let title = find_text(&doc, "book-title").unwrap_or_else(|| "Untitled".to_string());
         let author = build_author(&doc);
-        let language = find_text(&doc, "lang");
-
+        
         // Собираем все изображения из <binary> элементов
         let images = extract_images(&doc);
-
+        
         // Находим обложку
         let cover = extract_cover(&doc, &images);
-
+        
         let chapters = if with_chapters {
             extract_sections(&doc, &images)
         } else {
             None
         };
 
+        let language = find_text(&doc, "lang").unwrap_or(self.get_language(&chapters.clone().unwrap_or(vec![])).unwrap_or("en".into()));
+
         Ok(Book {
-            id: self.generate_id(title.clone()),
+            id: self.generate_id(title.clone(), path),
             meta: BookMeta {
                 title,
                 author,
-                language,
+                language: Some(language),
                 cover,
                 path: path.to_string_lossy().to_string(),
             },

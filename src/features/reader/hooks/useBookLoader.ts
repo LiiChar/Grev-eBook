@@ -97,8 +97,8 @@ export function useBookLoader(): UseBookLoaderReturn {
       let saved = data.position ?? null;
 
       if (!saved) {
-							saved = await getReadingPosition(data.meta.path);
-						}
+        saved = await getReadingPosition(data.meta.path);
+      }
       
       // Возвращаем информацию о позиции чтобы применить её на уровне страницы
       // (после того как DOM будет готов и заметки применены)

@@ -774,22 +774,15 @@
     "@tailwindcss/oxide" "4.1.18"
     tailwindcss "4.1.18"
 
-"@tanstack/solid-virtual@^3.13.25":
-  version "3.13.25"
-  resolved "https://registry.yarnpkg.com/@tanstack/solid-virtual/-/solid-virtual-3.13.25.tgz#654649873fd6535c2e07df4176fa69a7e8f41b18"
-  integrity sha512-KaCqRxrOmnz79YQgGzt+0tVly8rJ1kC3vc4k4LqNmZh4WbF5wJ4C0AjbyGs56tRJwL2vpbsCJoSb+nDwyT0OwQ==
-  dependencies:
-    "@tanstack/virtual-core" "3.15.0"
-
-"@tanstack/virtual-core@3.15.0":
-  version "3.15.0"
-  resolved "https://registry.yarnpkg.com/@tanstack/virtual-core/-/virtual-core-3.15.0.tgz#05f2511f564bb82d245718bc7df6691a69aeed17"
-  integrity sha512-0AwPGx0I8QxPYjAxShT/+z+ZOe9u8mW5rsXvivCTjRfRmz9a43+3mRyi4wwlyoUqOC56q/jatKa0Bh9M99BEHQ==
-
 "@tauri-apps/api@^2", "@tauri-apps/api@^2.8.0":
   version "2.9.1"
   resolved "https://registry.yarnpkg.com/@tauri-apps/api/-/api-2.9.1.tgz#e539bfa437e53864fd5e7ed0f28e8217fbc74de1"
   integrity sha512-IGlhP6EivjXHepbBic618GOmiWe4URJiIeZFlB7x3czM0yDHHYviH1Xvoiv4FefdkQtn6v7TuwWCRfOGdnVUGw==
+
+"@tauri-apps/api@^2.0.0", "@tauri-apps/api@^2.11.0":
+  version "2.11.0"
+  resolved "https://registry.yarnpkg.com/@tauri-apps/api/-/api-2.11.0.tgz#00fb69996010178a5153798d4a84f6fe3a1e1182"
+  integrity sha512-7CinYODhky9lmO23xHnUFv0Xt43fbtWMyxZcLcRBlFkcgXKuEirBvHpmtJ89YMhyeGcq20Wuc47Fa4XjyniywA==
 
 "@tauri-apps/cli-darwin-arm64@2.9.6":
   version "2.9.6"
@@ -869,6 +862,13 @@
   integrity sha512-q4Uq3eY87TdcYzXACiYSPhmpBA76shgmQswGkSVio4C82Sz2W4iehe9TnKYwbq7weHiL88Yw19XZm7v28+Micg==
   dependencies:
     "@tauri-apps/api" "^2.8.0"
+
+"@tauri-apps/plugin-fs@^2.5.1":
+  version "2.5.1"
+  resolved "https://registry.yarnpkg.com/@tauri-apps/plugin-fs/-/plugin-fs-2.5.1.tgz#e1b8643d41c74251699fcdecc800877d18a4a6fc"
+  integrity sha512-9Lz+Jopp6QyeEWhlpkMx4R/+P9HgR+AVAI4vOZhlT8Xaymtz8iVI/Ov984/XTqgJz/5gz5NretqPB/XEMS3NhQ==
+  dependencies:
+    "@tauri-apps/api" "^2.11.0"
 
 "@tauri-apps/plugin-log@~2":
   version "2.8.0"
@@ -984,6 +984,11 @@ convert-source-map@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/convert-source-map/-/convert-source-map-2.0.0.tgz#4b560f649fc4e918dd0ab75cf4961e8bc882d82a"
   integrity sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==
+
+create-web-stream@^1.1.1:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/create-web-stream/-/create-web-stream-1.1.2.tgz#65485ea8691135484f11afa81ce8ce54259e847c"
+  integrity sha512-qtdh7eHXm5ityhyXhMGU1Jm7Wb49pLWo8OZsLGEm4Wf2sXADQXkouQxt6Pq4C8y3O0XyIVGf0Jun4ZbelxytoA==
 
 cssesc@^3.0.0:
   version "3.0.0"
@@ -1389,6 +1394,14 @@ tapable@^2.2.0:
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/tapable/-/tapable-2.3.0.tgz#7e3ea6d5ca31ba8e078b560f0d83ce9a14aa8be6"
   integrity sha512-g9ljZiwki/LfxmQADO3dEY1CbpmXT5Hm2fJ+QaGKwSXUylMybePR7/67YW7jOrrvjEgL1Fmz5kzyAjWVWLlucg==
+
+tauri-plugin-android-fs-api@28.1.0:
+  version "28.1.0"
+  resolved "https://registry.yarnpkg.com/tauri-plugin-android-fs-api/-/tauri-plugin-android-fs-api-28.1.0.tgz#1dfe830a1c37558ccd1b1c53d2356489462f7070"
+  integrity sha512-gCnO1s2PW74+5CUF1Y8m8pfSpD+UIHnFpUPBfy1RlkJLAiv8Sci76o7OftZVUH8i3kmQfZpxI1KJL7dW5ckxWw==
+  dependencies:
+    "@tauri-apps/api" "^2.0.0"
+    create-web-stream "^1.1.1"
 
 tinyglobby@^0.2.13:
   version "0.2.15"

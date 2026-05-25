@@ -41,7 +41,7 @@ impl BookSource for TxtLoader {
             meta: BookMeta {
                 title,
                 author: None,
-                language: None,
+                language: Some(self.get_language(&chapters.clone().unwrap_or(vec![])).unwrap_or("en".into())),
                 cover: None,
                 path: path.to_string_lossy().to_string(),
             },

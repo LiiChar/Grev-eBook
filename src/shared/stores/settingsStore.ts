@@ -29,6 +29,11 @@ function applyReaderSettings(reader: SettingStore['reader']) {
   root.style.setProperty('--reader-font-size', `${reader.font_size}px`);
   root.style.setProperty('--reader-line-height', `${reader.line_height}`);
   root.style.setProperty('--reader-max-width', `${reader.column_width}px`);
+  root.style.setProperty('--reader-pdf-zoom', `${reader.pdf_zoom}`);
+  root.style.setProperty(
+    '--reader-pdf-zoom-lock',
+    reader.pdf_zoom_lock ? '1' : '0',
+  );
 
   // Font family
   const fontMap: Record<string, string> = {
@@ -93,6 +98,19 @@ export function setLineHeight(height: number) {
 export function setColumnWidth(width: number) {
   const clamped = Math.min(Math.max(width, 400), 1200);
   setSettings('reader', 'column_width', clamped);
+  applyReaderSettings(settings.reader);
+  saveSettings();
+}
+
+export function setPdfZoom(zoom: number) {
+  const clamped = Math.min(Math.max(zoom, 0.5), 3);
+  setSettings('reader', 'pdf_zoom', clamped);
+  applyReaderSettings(settings.reader);
+  saveSettings();
+}
+
+export function setPdfZoomLock(enabled: boolean) {
+  setSettings('reader', 'pdf_zoom_lock', enabled);
   applyReaderSettings(settings.reader);
   saveSettings();
 }

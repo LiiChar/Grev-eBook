@@ -9,12 +9,12 @@ import { Icon } from "../../shared/ui/Icon";
 import { Search } from "../../components/layout/Search";
 import { AddMenu } from "../../components/layout/AddMenu";
 import { Select } from "../../shared/ui/Select";
-import { ensureBooksLoaded, reader, setReader } from "../../shared/stores/readerStore";
+import { ensureBooksLoaded, reader, setReader, mergeBooksById } from "../../shared/stores/readerStore";
+import { getBooksVersion } from "../../shared/api/book";
 import { MobilePadding } from "@/widgets/layout/MobilePadding";
 import { Book as BookType } from "../../shared/types/book";
-import { getReadingPosition } from "../../shared/api/reader";
-import { stripHtml } from "../../shared/utils/html";
 import { getFileExtension } from "../../shared/utils/file";
+import { stripHtml } from "../../shared/utils/html";
 import { SkeletonLibrary } from "@/features/library/components/Skeleton";
 
 type SortKey = "title" | "author" | "recent";
@@ -42,31 +42,38 @@ const BookGridCard: Component<BookCardBaseProps> = (props) => {
 	const [percent, setPercent] = createSignal(0);
 	let cleanupRef: (() => void) | undefined;
 
-	onMount(async () => {
-		cleanupRef = () => {
-			const url = coverUrl();
-			if (url) URL.revokeObjectURL(url);
-		};
+	// onMount(() => {
+	// 	const id = requestIdleCallback(() => {
+	// 		if (!props.book.chapters?.length) return;
 
-		if (!props.book.chapters?.length) return;
+	// 		const pos = props.book.position;
+	// 		if (!pos?.anchor_text) return;
 
-		
-		let pos = props.book.position ?? null;
+	// 		const anchor = pos.anchor_text.trim();
 
-		if (!pos) {
-			pos = await getReadingPosition(props.book.meta.path);
-		}
-		if (!pos?.anchor_text) return;
+	// 		let total = 0;
+	// 		let found = -1;
 
-		const chaptersText = props.book.chapters.map((c: any) => stripHtml(c.html));
-		const fullText = chaptersText.join('\n');
-		const anchor = pos.anchor_text.trim();
-		const index = fullText.indexOf(anchor);
-		if (index < 0) return;
+	// 		for (const chapter of props.book.chapters) {
+	// 			const text = stripHtml(chapter.html);
 
-		const value = Math.round((index / fullText.length) * 100);
-		setPercent(Math.min(Math.max(value, 1), 100));
-	});
+	// 			const idx = text.indexOf(anchor);
+
+	// 			if (idx >= 0) {
+	// 				found = total + idx;
+	// 				break;
+	// 			}
+
+	// 			total += text.length;
+	// 		}
+
+	// 		if (found >= 0 && total > 0) {
+	// 			setPercent(Math.round((found / total) * 100));
+	// 		}
+	// 	});
+
+	// 	onCleanup(() => cancelIdleCallback(id));
+	// });
 
 	onCleanup(() => {
 		if (cleanupRef) cleanupRef();
@@ -151,31 +158,38 @@ const BookListCard: Component<BookCardBaseProps> = (props) => {
 	let cleanupRef: (() => void) | undefined;
 	
 	const [percent, setPercent] = createSignal(0);
-	onMount(async () => {
-		cleanupRef = () => {
-			const url = coverUrl();
-			if (url) URL.revokeObjectURL(url);
-		};
+	// onMount(() => {
+	// 	const id = requestIdleCallback(() => {
+	// 		if (!props.book.chapters?.length) return;
 
-		if (!props.book.chapters?.length) return;
+	// 		const pos = props.book.position;
+	// 		if (!pos?.anchor_text) return;
 
-		
-		let pos = props.book.position ?? null;
+	// 		const anchor = pos.anchor_text.trim();
 
-		if (!pos) {
-			pos = await getReadingPosition(props.book.meta.path);
-		}
-		if (!pos?.anchor_text) return;
+	// 		let total = 0;
+	// 		let found = -1;
 
-		const chaptersText = props.book.chapters.map((c: any) => stripHtml(c.html));
-		const fullText = chaptersText.join('\n');
-		const anchor = pos.anchor_text.trim();
-		const index = fullText.indexOf(anchor);
-		if (index < 0) return;
+	// 		for (const chapter of props.book.chapters) {
+	// 			const text = stripHtml(chapter.html);
 
-		const value = Math.round((index / fullText.length) * 100);
-		setPercent(Math.min(Math.max(value, 1), 100));
-	});
+	// 			const idx = text.indexOf(anchor);
+
+	// 			if (idx >= 0) {
+	// 				found = total + idx;
+	// 				break;
+	// 			}
+
+	// 			total += text.length;
+	// 		}
+
+	// 		if (found >= 0 && total > 0) {
+	// 			setPercent(Math.round((found / total) * 100));
+	// 		}
+	// 	});
+
+	// 	onCleanup(() => cancelIdleCallback(id));
+	// });
 
 	onCleanup(() => {
 		if (cleanupRef) cleanupRef();
@@ -215,6 +229,7 @@ const BookListCard: Component<BookCardBaseProps> = (props) => {
 							target.style.display = 'none';
 						}}
 						src={coverUrl()!}
+						loading='lazy'
 						alt=''
 						class='w-full h-full object-cover'
 					/>
@@ -251,7 +266,8 @@ export function LibraryPage() {
       return;
     }
 
-    await loadBooks();
+		// kick off loading but don't await to avoid blocking navigation/render
+		loadBooks();
   });
 
   onCleanup(() => {
@@ -278,11 +294,9 @@ export function LibraryPage() {
 
     try {
       const newBooks = await addBooks(folder);
-      // Добавляем новые книги к существующим, а не заменяем все
-      setReader({
-        books: [...reader.books, ...newBooks],
-        booksLoaded: true,
-      });
+      const merged = mergeBooksById(reader.books, newBooks);
+      setReader({ books: merged, booksLoaded: true });
+      getBooksVersion().then(v => setReader('booksVersion', v)).catch(() => {});
       toast.success(`Добавлено книг: ${newBooks.length}`);
     } catch (err) {
       console.error("Failed to add books:", err);
@@ -299,15 +313,18 @@ export function LibraryPage() {
       filters: [
         {
           name: "Books",
-          extensions: ["epub", "pdf", "fb2", "txt", "html", "htm", "md"],
+          extensions: ["epub", "pdf", "fb2", "txt", "html", "htm", "md", "pdf"],
         },
       ],
     });
     if (!file) return;
 
     try {
-      await addBook(file);
-      await ensureBooksLoaded(true);
+			const added = await addBook(file);
+			if (!added) throw new Error('No book returned from backend');
+			const merged = mergeBooksById(reader.books, [added] as any);
+			setReader({ books: merged, booksLoaded: true });
+			getBooksVersion().then(v => setReader('booksVersion', v)).catch(()=>{});
       toast.success("Книга добавлена");
     } catch (err) {
       console.error("Failed to add book:", err);
@@ -356,8 +373,6 @@ export function LibraryPage() {
 					class='shrink-0 px-4 py-2 border-b border-(--border) bg-(--background)'
 				>
 					<div class='flex items-center justify-between gap-4'>
-						{/* <h1 class='text-xl font-semibold'>Библиотека</h1> */}
-
 						<div class='flex items-center justify-between gap-2 w-full'>
 							<div class='flex items-center gap-2'>
 								<Search searchQuery={searchQuery()} setSearchQuery={setSearchQuery} />

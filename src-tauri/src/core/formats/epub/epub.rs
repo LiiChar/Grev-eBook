@@ -45,9 +45,11 @@ impl BookSource for EpubLoader {
         let cover = cover_href
             .and_then(|href| read_zip_bytes(&mut zip, &join_zip_path(&base_dir, &href)).ok());
 
+        let language = meta.language.clone().unwrap_or(self.get_language(&chapters.clone().unwrap_or(vec![])).unwrap_or("en".into()));
+
         Ok(Book {
-            id: self.generate_id(meta.title.clone()),
-            meta: BookMeta { cover, ..meta },
+            id: self.generate_id(meta.title.clone(), path),
+            meta: BookMeta { cover, language: Some(language), ..meta },
             chapters,
             position: None,
         })
