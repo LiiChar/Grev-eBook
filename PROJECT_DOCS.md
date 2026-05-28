@@ -1,4 +1,4 @@
-# 📖 Grev — Полная документация проекта
+# 📖 Uni — Полная документация проекта
 
 > Десктопное приложение для чтения электронных книг  
 > Стек: **Tauri v2 + SolidJS + TypeScript + Rust**  
@@ -9,7 +9,7 @@
 
 ## Оглавление
 
-1. [Что такое Grev](#1-что-такое-grev)
+1. [Что такое Uni](#1-что-такое-uni)
 2. [Архитектура на птичьем уровне](#2-архитектура-на-птичьем-уровне)
 3. [Структура проекта](#3-структура-проекта)
 4. [Как работает приложение (поток данных)](#4-как-работает-приложение-поток-данных)
@@ -34,9 +34,9 @@
 
 ---
 
-## 1. Что такое Grev
+## 1. Что такое Uni
 
-**Grev** — это десктопное приложение для чтения электронных книг. Оно позволяет:
+**Uni** — это десктопное приложение для чтения электронных книг. Оно позволяет:
 
 - **Импортировать книги** из файлов или папок (поддерживает 7 форматов)
 - **Просматривать библиотеку** в виде сетки или списка с обложками и прогрессом
@@ -93,7 +93,7 @@
 ## 3. Структура проекта
 
 ```
-Grev/
+Uni/
 │
 ├── src/                              ← FRONTEND (SolidJS + TypeScript)
 │   ├── index.tsx                     ← Точка входа: render(<App />)
@@ -443,7 +443,7 @@ export async function functionName(params): Promise<T> {
 ```rust
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 fn main() {
-    grev_lib::run();
+    uni_lib::run();
 }
 ```
 
@@ -697,7 +697,7 @@ CSS для читалки:
 ```html
 <mark data-note="uuid-123" style="background-color: #fb7100; border-radius: 4px; color: #fff;">
   выделенный текст
-  <div data-popup class="absolute z-50 bg-(--background)/80 backdrop-blur-lg ...">
+  <div data-popup class="absolute z-50 bg-background/80 backdrop-blur-lg ...">
     <div class="popup-note flex gap-2 p-2">
       <label class="input-label">
         <input type="color" value="#fb7100" />
@@ -967,8 +967,8 @@ pub fn compute_hash(path: &Path) -> Option<String> {
 --glass-blur: 14px;
 --glass-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
 
-.glass { @apply bg-(--surface)/40 backdrop-blur-md border border-[var(--border)] shadow; }
-.glass-strong { background: var(--surface-hover); backdrop-filter: blur(calc(var(--glass-blur) * 1.25)); }
+.glass { @apply bg-secondary/40 backdrop-blur-md border border-border shadow; }
+.glass-strong { background: var(--secondary-hover); backdrop-filter: blur(calc(var(--glass-blur) * 1.25)); }
 ```
 
 ### 14.4 Анимации
@@ -1264,7 +1264,7 @@ type SettingStore = {
 
 ```json
 {
-  "identifier": "com.litav.grev",
+  "identifier": "com.litav.uni",
   "build": {
     "beforeDevCommand": "yarn dev",
     "devUrl": "http://localhost:1420",
@@ -1272,7 +1272,7 @@ type SettingStore = {
     "frontendDist": "../dist"
   },
   "app": {
-    "windows": [{ "title": "grev", "width": 800, "height": 600, "decorations": false }]
+    "windows": [{ "title": "uni", "width": 800, "height": 600, "decorations": false }]
   },
   "bundle": {
     "resources": { "bin/pdfium.dll": "pdfium.dll" },

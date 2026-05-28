@@ -27,121 +27,269 @@
 ====================================================== */
 
 @theme {
-  --radius-sm: 0.5rem;
-  --radius: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
 
-  /* Fonts */
-  --font-reader: "Literata", Georgia, serif;
-  --font-ui: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: ui-monospace, monospace;
+  --color-border: hsl(var(--border));
+  --color-border-strong: hsl(var(--border-strong));
 
-  /* Reader layout */
-  --reader-font-size: 18px;
-  --reader-line-height: 1.7;
-  --reader-paragraph-gap: 0.9em;
-  --reader-max-width: 68ch;
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
 
-  --glass-blur: 14px;
-  --glass-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
 
-  /* ================= LIGHT (Paper) ================= */
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
 
-  --background: oklch(0.99 0.003 95);
-  --background-subtle: oklch(0.97 0.005 95);
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
 
-  --foreground: oklch(0.22 0.01 260);
-  --foreground-muted: oklch(0.50 0.01 260);
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
 
-  --surface: oklch(1 0 0 / 0.9);
-  --surface-hover: oklch(0.98 0.003 95);
-  --surface-active: oklch(0.95 0.005 95);
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
 
-  /* мягкий сине-фиолетовый акцент (намного приятнее янтаря) */
-  --primary: oklch(0.62 0.14 260);
-  --primary-hover: oklch(0.55 0.16 260);
-  --primary-foreground: oklch(0.98 0 0);
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
 
-  --accent: oklch(0.70 0.10 200);
-  --accent-hover: oklch(0.65 0.12 200);
+  --color-ring: hsl(var(--ring));
 
-  --border: oklch(0.90 0.005 260);
-  --border-strong: oklch(0.82 0.01 260 / 0.7);
-  --ring: oklch(0.62 0.14 260 / 0.4);
-
-  --sidebar-width: 240px;
-  --sidebar-collapsed-width: 56px;
+  --color-radius: var(--radius);
 }
 
-/* ======================================================
-   DARK THEME
-====================================================== */
+@layer base {
+  :root {
+    /* Radius */
+    --radius-sm: 0.5rem;
+    --radius: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.5rem;
 
-.dark {
-  --glass-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+    /* Fonts */
+    --font-reader: "Literata", Georgia, serif;
+    --font-ui: "Inter", system-ui, -apple-system, sans-serif;
+    --font-mono: ui-monospace, monospace;
 
-  --background: oklch(0.16 0.01 260);
-  --background-subtle: oklch(0.20 0.012 260);
+    /* Reader layout */
+    --reader-font-size: 18px;
+    --reader-line-height: 1.7;
+    --reader-paragraph-gap: 0.9em;
+    --reader-max-width: 68ch;
 
-  --foreground: oklch(0.92 0.005 260);
-  --foreground-muted: oklch(0.65 0.008 260);
+    --glass-blur: 14px;
+    --glass-shadow: 0 8px 30px rgb(0 0 0 / 0.05);
 
-  --surface: oklch(0.22 0.01 260 / 0.85);
-  --surface-hover: oklch(0.26 0.012 260 / 0.9);
+    --sidebar-width: 240px;
+    --sidebar-collapsed-width: 56px;
 
-  --primary: oklch(0.70 0.12 260);
-  --primary-hover: oklch(0.75 0.14 260);
+    /* Paper Theme */
+    --background: 48 20% 98%;
+    --foreground: 240 12% 18%;
 
-  --accent: oklch(0.72 0.10 200);
+    --muted: 48 14% 96%;
+    --muted-foreground: 240 6% 46%;
 
-  --border: oklch(0.32 0.01 260 / 0.5);
-  --border-strong: oklch(0.42 0.015 260 / 0.6);
-  --ring: oklch(0.70 0.12 260 / 0.5);
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 12% 18%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 12% 18%;
+
+    /* surface -> secondary */
+    --secondary: 0 0% 100%;
+    --secondary-foreground: 240 12% 18%;
+
+    --accent: 200 35% 94%;
+    --accent-foreground: 240 12% 18%;
+
+    --primary: 252 55% 58%;
+    --primary-foreground: 0 0% 98%;
+
+    --border: 240 10% 90%;
+    --border-strong: 240 8% 82%;
+
+    --input: 240 10% 90%;
+    --ring: 252 55% 58%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --info: 204 94% 94%;
+    --info-foreground: 199 89% 48%;
+
+    --success: 149 80% 90%;
+    --success-foreground: 160 84% 39%;
+
+    --warning: 48 96% 89%;
+    --warning-foreground: 25 95% 53%;
+
+    --error: 0 93% 94%;
+    --error-foreground: 0 84% 60%;
+  }
+
+  .light {
+    --background: 240 12% 14%;
+    --foreground: 0 0% 94%;
+
+    --muted: 240 10% 18%;
+    --muted-foreground: 240 8% 65%;
+
+    --popover: 240 10% 18%;
+    --popover-foreground: 0 0% 94%;
+
+    --card: 240 10% 18%;
+    --card-foreground: 0 0% 94%;
+
+    --secondary: 240 10% 18%;
+    --secondary-foreground: 0 0% 94%;
+
+    --accent: 240 12% 24%;
+    --accent-foreground: 0 0% 94%;
+
+    --primary: 252 55% 58%;
+    --primary-foreground: 0 0% 98%;
+
+    --border: 240 10% 28%;
+    --border-strong: 240 12% 38%;
+
+    --input: 240 10% 28%;
+    --ring: 252 55% 58%;
+
+    --glass-shadow: 0 10px 40px rgb(0 0 0 / 0.35);
+  }
+
+  .dark {
+    --background: 240 12% 14%;
+    --foreground: 0 0% 94%;
+
+    --muted: 240 10% 18%;
+    --muted-foreground: 240 8% 65%;
+
+    --popover: 240 10% 18%;
+    --popover-foreground: 0 0% 94%;
+
+    --card: 240 10% 18%;
+    --card-foreground: 0 0% 94%;
+
+    --secondary: 240 10% 18%;
+    --secondary-foreground: 0 0% 94%;
+
+    --accent: 240 12% 24%;
+    --accent-foreground: 0 0% 94%;
+
+    --primary: 252 60% 70%;
+    --primary-foreground: 240 10% 12%;
+
+    --border: 240 10% 28%;
+    --border-strong: 240 12% 38%;
+
+    --input: 240 10% 28%;
+    --ring: 252 60% 70%;
+
+    --glass-shadow: 0 10px 40px rgb(0 0 0 / 0.35);
+  }
+
+  /* Sepia */
+  .sepia {
+    --background: 42 38% 90%;
+    --foreground: 32 28% 24%;
+
+    --muted: 40 24% 86%;
+    --muted-foreground: 34 18% 42%;
+
+    --popover: 42 38% 92%;
+    --popover-foreground: 32 28% 24%;
+
+    --card: 42 38% 92%;
+    --card-foreground: 32 28% 24%;
+
+    --secondary: 42 38% 92%;
+    --secondary-foreground: 32 28% 24%;
+
+    --accent: 38 32% 86%;
+    --accent-foreground: 32 28% 24%;
+
+    --primary: 30 42% 42%;
+    --primary-foreground: 0 0% 98%;
+
+    --border: 38 24% 72%;
+    --border-strong: 36 28% 62%;
+
+    --input: 38 24% 72%;
+    --ring: 30 42% 42%;
+  }
+
+  /* Night OLED */
+  .night {
+    --background: 0 0% 4%;
+    --foreground: 240 8% 82%;
+
+    --muted: 240 8% 10%;
+    --muted-foreground: 240 6% 52%;
+
+    --popover: 240 8% 8%;
+    --popover-foreground: 240 8% 82%;
+
+    --card: 240 8% 8%;
+    --card-foreground: 240 8% 82%;
+
+    --secondary: 240 8% 8%;
+    --secondary-foreground: 240 8% 82%;
+
+    --accent: 240 8% 14%;
+    --accent-foreground: 240 8% 82%;
+
+    --primary: 252 58% 68%;
+    --primary-foreground: 0 0% 100%;
+
+    --border: 240 6% 18%;
+    --border-strong: 240 8% 28%;
+
+    --input: 240 6% 18%;
+    --ring: 252 58% 68%;
+
+    --glass-shadow: none;
+  }
 }
 
-/* ======================================================
-   SEPIA THEME
-====================================================== */
-
-.sepia {
-  --background: oklch(0.92 0.03 80);
-  --background-subtle: oklch(0.88 0.035 80);
-
-  --foreground: oklch(0.28 0.03 60);
-  --foreground-muted: oklch(0.52 0.025 65);
-
-  --surface: oklch(0.94 0.025 80 / 0.9);
-  --surface-hover: oklch(0.90 0.03 80);
-
-  --primary: oklch(0.55 0.10 60);
-  --primary-hover: oklch(0.50 0.12 60);
-
-  --border: oklch(0.78 0.03 75 / 0.6);
-  --border-strong: oklch(0.70 0.04 75 / 0.7);
+@layer base {
+  body {
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+  }
 }
 
-/* ======================================================
-   NIGHT THEME (OLED)
-====================================================== */
+@layer utilities {
+  .step {
+    counter-increment: step;
+  }
+  .step::before {
+    content: counter(step);
+    position: absolute;
 
-.night {
-  --glass-shadow: none;
+    width: 2.25rem;
+    height: 2.25rem;
 
-  --background: oklch(0.05 0 0);
-  --background-subtle: oklch(0.09 0.005 260);
+    margin-left: -50px;
+    margin-top: -4px;
 
-  --foreground: oklch(0.80 0.004 260);
-  --foreground-muted: oklch(0.55 0.005 260);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 
-  --surface: oklch(0.12 0.005 260 / 0.7);
-  --surface-hover: oklch(0.18 0.008 260 / 0.8);
+    border-radius: 9999px;
 
-  --primary: oklch(0.68 0.10 260);
-  --primary-hover: oklch(0.74 0.12 260);
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 1rem;
+    text-indent: -1px;
 
-  --border: oklch(0.25 0.005 260 / 0.4);
-  --border-strong: oklch(0.35 0.008 260 / 0.5);
+    background: hsl(var(--muted));
+    border: 4px solid hsl(var(--background));
+  }
 }
 
 /* ======================================================
@@ -166,8 +314,9 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background: var(--background);
-  color: var(--foreground);
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
   font-family: var(--font-ui);
   font-size: 14px;
   line-height: 1.5;
@@ -215,11 +364,15 @@ body {
 ====================================================== */
 
 .glass {
-  @apply bg-(--surface)/40 backdrop-blur-md border border-[var(--border)] shadow;
+  background: hsl(var(--secondary) / 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border));
+  box-shadow: var(--glass-shadow);
 }
 
 .glass-strong {
-  background: var(--surface-hover);
+  background: var(--secondary-hover);
   backdrop-filter: blur(calc(var(--glass-blur) * 1.25));
   -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.25));
   border: 1px solid var(--border-strong);
@@ -227,7 +380,7 @@ body {
 }
 
 .glass-subtle {
-  background: oklch(from var(--surface) l c h / 0.5);
+  background: oklch(from var(--secondary) l c h / 0.5);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid oklch(from var(--border) l c h / 0.4);
@@ -240,7 +393,7 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
   line-height: 1.3;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 h1 { font-size: 1.75rem; }
@@ -249,7 +402,7 @@ h3 { font-size: 1.125rem; }
 h4 { font-size: 1rem; }
 
 p {
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .text-muted {
@@ -263,8 +416,8 @@ p {
 input,
 textarea,
 select {
-  background: var(--surface);
-  color: var(--foreground);
+  background: hsl(var(--secondary));
+ color: hsl(var(--foreground));
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 0.5rem 0.75rem;
@@ -283,20 +436,19 @@ input:focus,
 textarea:focus,
 select:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--ring);
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 3px hsl(var(--ring));
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: var(--foreground-muted);
+  color: hsl(var(--foreground-muted));
 }
 
 /* Range slider */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
-  background: transparent;
   cursor: pointer;
   height: 6px;
   padding: 0;
@@ -314,7 +466,7 @@ input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 16px;
   height: 16px;
-  background: var(--primary);
+  background: hsl(var(--primary));
   border-radius: 50%;
   margin-top: -5px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
@@ -334,7 +486,7 @@ input[type="range"]::-moz-range-track {
 input[type="range"]::-moz-range-thumb {
   width: 16px;
   height: 16px;
-  background: var(--primary);
+  background: hsl(var(--primary));
   border: none;
   border-radius: 50%;
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
@@ -416,13 +568,13 @@ input[type="range"]::-moz-range-thumb {
 }
 
 :focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid hsl(var(--primary));
   outline-offset: 2px;
 }
 
 ::selection {
-  background: var(--primary);
-  color: var(--primary-foreground);
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
 }
 
 /* Theme Selector style */
@@ -503,7 +655,7 @@ input[type="range"]::-moz-range-thumb {
   height: var(--uib-line-weight);
   width: 100%;
   border-radius: calc(var(--uib-line-weight) / 2);
-  background-color: var(--foreground);
+  background-color: hsl(var(--foreground));
   animation: rotate81232 var(--uib-speed) ease-in-out infinite;
 }
 

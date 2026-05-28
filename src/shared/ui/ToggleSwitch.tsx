@@ -8,7 +8,7 @@ export function ToggleSwitch(props: {
 			onClick={() => props.onChange(!props.checked)}
 			class={`
         relative min-w-11 w-11 h-6 rounded-full transition-colors duration-200
-        ${props.checked ? 'bg-(--primary)' : 'bg-(--border-strong)'}
+        ${props.checked ? 'bg-primary' : 'bg-secondary'}
       `}
 		>
 			<span

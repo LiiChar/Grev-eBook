@@ -4,7 +4,7 @@ use crate::core::{
 };
 use anyhow::Result;
 #[cfg(not(target_os = "android"))]
-use mupdf::{Document, FilePath, Page, TextPageFlags};
+use mupdf::{Document, TextPageFlags};
 use std::path::Path;
 use uuid::Uuid;
 use regex::Regex;
@@ -25,8 +25,8 @@ impl BookSource for PdfLoader {
             .and_then(|s| s.to_str())
             .unwrap_or("Untitled")
             .to_string();
-
-        let mut author = None;
+        
+        let mut author: Option<String> = None;
 
         #[cfg(not(target_os = "android"))]
         {
@@ -56,7 +56,7 @@ impl BookSource for PdfLoader {
 
             for (i, page) in pages.enumerate() {
                 let html = page
-                    .map_err(|e| anyhow::anyhow!("Failed get page from pdf document"))?
+                    .map_err(|e| anyhow::anyhow!("Failed get page from pdf document by {}", e))?
                     .to_text_page(TextPageFlags::all())
                     .map_err(|e| {
                         anyhow::anyhow!("Failed convert page from pdf document by {}", e)
@@ -77,13 +77,21 @@ impl BookSource for PdfLoader {
             }
         }
         Ok(Book {
-            id: self.generate_id(title.clone(), path),
+            id: self.generate_id(title.clone()),
             meta: BookMeta {
                 title: title,
                 author: author,
                 language: Some(self.get_language(&chapters).unwrap_or("en".into())),
                 cover: None,
                 path: path.to_string_lossy().to_string(),
+                size: self.get_size(&path)?,
+                last_read_at: self.get_last_read_at(&path)?,
+                last_modified: self.get_last_modified(&path)?,
+                created_at: self.get_created_at(&path)?,
+                description: None,
+                chars_read: Some(self.get_chars_read(&chapters.clone())?),
+                progress_read: None,
+                genres: None
             },
             position: None,
             chapters: Some(chapters),

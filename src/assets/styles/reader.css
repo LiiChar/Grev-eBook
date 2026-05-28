@@ -10,7 +10,7 @@ body:has(.reader) .bottom-navbar {
   font-family: var(--font-reader);
   font-size: var(--reader-font-size, 18px);
   line-height: var(--reader-line-height, 1.65);
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   background: transparent;
   max-width: var(--reader-max-width, 70ch);
   margin-inline: auto;
@@ -27,9 +27,14 @@ body:has(.reader) .bottom-navbar {
 
 /* Paragraphs - more airy */
 .chapter p {
-  margin-bottom: 0.2em;
+  text-align: justify;
   text-indent: 1.5em;
+
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  overflow-wrap: break-word;
 }
+
 
 
 .chapter p:last-child {
@@ -66,10 +71,10 @@ body:has(.reader) .bottom-navbar {
   margin-top: 1.5em !important;
   margin-bottom: 1.0em !important;
   text-indent: 0 !important;
-  color: var(--foreground) !important;
+  color: hsl(var(--foreground)) !important;
   border: none !important;
   background: none !important;
-  border-bottom: 1px solid var(--border) !important;
+  border-bottom: 1px solid hsl(var(--border)) !important;
 }
 
 .chapter h1 { font-size: 2.5em; text-align: center; }
@@ -90,7 +95,7 @@ body:has(.reader) .bottom-navbar {
 
 /* Links */
 .chapter a {
-  color: var(--primary);
+  color: hsl(var(--primary));
   text-decoration: underline;
   text-underline-offset: 2px;
   text-decoration-thickness: 1px;
@@ -104,18 +109,18 @@ body:has(.reader) .bottom-navbar {
 /* Blockquotes - fixed styling */
 .chapter blockquote {
   display: block;
-  border-left: 3px solid var(--primary);
+  border-left: 3px solid hsl(var(--primary));
   padding: 0.5em 0 0.5em 1em;
   margin: 1em 0 1em 0.5em;
-  background: var(--surface);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: hsl(var(--secondary));
+  border-radius: 0 hsl(var(--radius-sm)) hsl(var(--radius-sm)) 0;
 }
 
 .chapter blockquote p {
   text-indent: 0;
   margin-bottom: 0.4em;
   font-style: italic;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .chapter blockquote p:last-child {
@@ -131,7 +136,7 @@ body:has(.reader) .bottom-navbar {
   border-left: 3px solid var(--primary);
   padding: 0.5em 0 0.5em 0em;
   margin: 1em 0 1em 0.5em;
-  background: var(--surface);
+  background: var(--secondary);
   line-height: 1.7em;
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
@@ -159,13 +164,13 @@ body:has(.reader) .bottom-navbar {
 .chapter code {
   font-family: var(--font-mono);
   font-size: 0.85em;
-  background: var(--surface-hover);
+  background: var(--secondary-hover);
   padding: 0.15em 0.35em;
   border-radius: 3px;
 }
 
 .chapter pre {
-  background: var(--surface);
+  background: var(--secondary);
   padding: 0.8em 1em;
   border-radius: var(--radius-sm);
   overflow-x: auto;
@@ -202,7 +207,7 @@ body:has(.reader) .bottom-navbar {
 }
 
 .chapter th {
-  background: var(--surface);
+  background: var(--secondary);
   font-weight: 600;
 }
 

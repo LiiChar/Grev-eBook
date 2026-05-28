@@ -16,14 +16,14 @@ export const Search = ({ searchQuery, setSearchQuery }: SearchProps) => {
 				<Icon
 					name='search'
 					size={16}
-					class='absolute left-2 top-1/2 -translate-y-1/2 text-(--foreground-muted)'
+					class='absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground'
 				/>
 				<input
 					type='text'
 					placeholder='Поиск...'
 					value={searchQuery}
 					onInput={e => setSearchQuery(e.currentTarget.value)}
-					class='pl-8! pr-4 py-2 w-64 rounded-lg text-sm'
+					class='pl-8! pr-4 py-2 w-64 rounded-lg! text-sm'
 				/>
 			</div>
 
@@ -31,7 +31,7 @@ export const Search = ({ searchQuery, setSearchQuery }: SearchProps) => {
 			<div class='md:hidden'>
 				<button
 					type='button'
-					class='p-2 rounded-lg hover:bg-(--surface) transition-colors'
+					class='p-2 rounded-lg hover:bg-secondary transition-colors'
 					aria-label='Поиск'
 					onClick={() => setIsOpen(prev => !prev)}
 				>
@@ -43,14 +43,14 @@ export const Search = ({ searchQuery, setSearchQuery }: SearchProps) => {
 							<Icon
 								name='search'
 								size={16}
-								class='absolute left-2 top-1/2 -translate-y-1/2 text-(--foreground-muted)'
+								class='absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground'
 							/>
 							<input
 								type='text'
 								placeholder='Поиск...'
 								value={searchQuery}
 								onInput={e => setSearchQuery(e.currentTarget.value)}
-								class='pl-8! pr-4 py-2 w-64 rounded-lg text-sm border border-(--border) backdrop-blur-lg'
+								class='pl-8! pr-4 py-2 w-64 rounded-lg text-sm border border-border backdrop-blur-lg'
 							/>
 						</div>
 					</div>

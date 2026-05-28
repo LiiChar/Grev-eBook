@@ -81,17 +81,20 @@ export function ReaderToolbar(props: ReaderToolbarProps) {
       `}
 			>
 				{/* Left */}
-				<div class='flex items-center gap-2 border-[var(--border)]  rounded-lg p-0 sm:px-2 sm:pr-4 backdrop-blur-md bg-(--background)/40'>
-					<GlassButton size='icon' variant='ghost' class="rounded-lg!" onClick={props.onNavigateBack}>
-						<Icon name='chevronLeft' size={18} class="-ml-0.5" />
-					</GlassButton>
-					<div class='hidden sm:block'>{props.book.meta.title}</div>
-				</div>
+				<GlassButton
+					class='rounded-lg! px-0! reader-control'
+					onClick={props.onNavigateBack}
+				>
+					<div class='flex items-center gap-2  rounded-lg p-0 sm:px-2 sm:pr-4'>
+						<Icon name='chevronLeft' size={18} class='-ml-0.5' />
+						<div class='hidden sm:block'>{props.book.meta.title}</div>
+					</div>
+				</GlassButton>
 
 				{/* Right */}
-				<div class='flex items-center gap-0 border-[var(--border)]  rounded-lg overflow-hidden  backdrop-blur-md bg-(--background)/40 relative'>
+				<div class='flex items-center gap-0 border-border glass rounded-lg overflow-hidden  backdrop-blur-md bg-background/40 relative reader-control'>
 					<div
-						class='absolute -z-1 top-0 left-0 h-full bg-(--background)/60 transition'
+						class='absolute -z-1 top-0 left-0 h-full bg-background/60 transition'
 						style={{ width: percent() + '%' }}
 					/>
 					<div class='relative'>
@@ -112,7 +115,7 @@ export function ReaderToolbar(props: ReaderToolbarProps) {
 						title='Текст в речь'
 					>
 						{scrolling() ? (
-							<Scroll class='stroke-(--primary)' size={14} />
+							<Scroll class='stroke-primary' size={14} />
 						) : (
 							<Scroll size={14} />
 						)}

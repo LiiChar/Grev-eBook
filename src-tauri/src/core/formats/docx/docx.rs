@@ -52,16 +52,35 @@ impl BookSource for DocxLoader {
                     .unwrap_or("Untitled")
                     .to_string();
 
-        let meta = read_core_properties(&mut archive).unwrap_or_else(|_| BookMeta {
-            title: file_title,
-            author: None,
+            // Реализация из вашего исходного кода
+        let doc = read_xml(&mut archive, "docProps/core.xml")?;
+        let title = doc
+            .get_child("title")
+            .and_then(|e| e.get_text())
+            .map(String::from).unwrap_or(file_title);
+        let author = doc
+            .get_child("creator")
+            .and_then(|e| e.get_text())
+            .map(String::from);
+
+        let meta = BookMeta {
+            title,
+            author,
             language: Some(self.get_language(&chapters.clone().unwrap_or(vec![])).unwrap_or("en".into())),
             cover: None,
             path: path.to_string_lossy().into_owned(),
-        });
+            size: self.get_size(&path).unwrap_or(0),
+            last_read_at: self.get_last_read_at(&path).unwrap_or(0),
+            last_modified: self.get_last_modified(&path).unwrap_or(0),
+            created_at: self.get_created_at(&path).unwrap_or(0),
+            description: None,
+            chars_read: Some(self.get_chars_read(&chapters.clone().unwrap_or(vec![]))?),
+            progress_read: None,
+            genres: None,
+        };
 
         Ok(Book {
-            id: self.generate_id(meta.title.clone(), path),
+            id: self.generate_id(meta.title.clone()),
             meta,
             chapters,
             position: None,
@@ -84,14 +103,14 @@ fn convert_document_to_chapters(
     let mut list_level = 0;
     let mut list_type = "ul";
 
-    let mut close_list = |html: &mut String, in_list: &mut bool, list_type: &str| {
+    let close_list = |html: &mut String, in_list: &mut bool, list_type: &str| {
         if *in_list {
             html.push_str(&format!("</{}>\n", list_type));
             *in_list = false;
         }
     };
 
-    let mut push_chapter = |chapters: &mut Vec<Chapter>,
+    let push_chapter = |chapters: &mut Vec<Chapter>,
                             title: &mut Option<String>,
                             html: &mut String,
                             order: &mut usize| {
@@ -372,7 +391,6 @@ fn process_table(
                                 }
                                 html.push_str("</td>\n");
                             }
-                            _ => {}
                         }
                     }
                 }
@@ -470,26 +488,7 @@ fn guess_mime_from_extension(path: &str) -> &'static str {
     }
 }
 
-// Ваш оригинальный read_core_properties (вставьте)
-fn read_core_properties(archive: &mut ZipArchive<impl Read + Seek>) -> Result<BookMeta> {
-    // Реализация из вашего исходного кода
-    let doc = read_xml(archive, "docProps/core.xml")?;
-    let title = doc
-        .get_child("title")
-        .and_then(|e| e.get_text())
-        .map(String::from);
-    let author = doc
-        .get_child("creator")
-        .and_then(|e| e.get_text())
-        .map(String::from);
-    Ok(BookMeta {
-        title: title.unwrap_or_default(),
-        author,
-        language: None,
-        cover: None,
-        path: String::new(),
-    })
-}
+
 
 // Если нужно read_xml (из оригинала)
 fn read_xml<R: Read + Seek>(archive: &mut ZipArchive<R>, path: &str) -> Result<Element> {

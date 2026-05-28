@@ -1,7 +1,3 @@
-/**
- * Хук для сохранения и восстановления позиции чтения.
- * Вынесен из BookRead.tsx.
- */
 
 import { getReadingAnchor } from '../../../shared/utils/anchor';
 import { saveReadingPosition } from '../../../shared/api/reader';
@@ -9,86 +5,86 @@ import { debounce } from '../../../shared/utils/common';
 import type { ReaderMode } from '../../../shared/api/reader';
 
 export interface UseReadingPositionReturn {
-  savePosition: (options: {
-    contentEl: HTMLDivElement;
-    chapterId: string;
-    bookPath: string;
-    mode: ReaderMode;
-  }) => Promise<void>;
-  debouncedSavePosition: (options: {
-    contentEl: HTMLDivElement;
-    chapterId: string;
-    bookPath: string;
-    mode: () => ReaderMode;
-  }) => void;
+	savePosition: (options: {
+		contentEl: HTMLDivElement;
+		chapterId: string;
+		bookPath: string;
+		mode: ReaderMode;
+	}) => Promise<void>;
+
+	debouncedSavePosition: (options: {
+		contentEl: HTMLDivElement;
+		chapterId: string;
+		bookPath: string;
+		mode: ReaderMode;
+	}) => void;
 }
 
+type SaveOptions = {
+	contentEl: HTMLDivElement;
+	chapterId: string;
+	bookPath: string;
+	mode: ReaderMode;
+};
+
 export function useReadingPosition(): UseReadingPositionReturn {
-  async function savePosition(options: {
-    contentEl: HTMLDivElement;
-    chapterId: string;
-    bookPath: string;
-    mode: ReaderMode;
-  }): Promise<void> {
-    const { contentEl, chapterId, bookPath, mode } = options;
-    const position = getReadingAnchor(contentEl, chapterId);
-    if (!position) return;
+	async function savePosition({
+		contentEl,
+		chapterId,
+		bookPath,
+		mode,
+	}: SaveOptions): Promise<void> {
+		const position = getReadingAnchor(contentEl, chapterId);
+		if (!position) return;
 
-    try {
-      await saveReadingPosition(bookPath, position, mode);
-    } catch (err) {
-      console.error('Failed to save position:', err);
-    }
-  }
+		try {
+			await saveReadingPosition(bookPath, position, mode);
+		} catch (err) {
+			console.error('Failed to save position:', err);
+		}
+	}
 
-  // Debounce-обёртка для onScroll
-  function debouncedSavePosition(options: {
-    contentEl: HTMLDivElement;
-    chapterId: string;
-    bookPath: string;
-    mode: () => ReaderMode;
-  }): void {
-    const { contentEl, chapterId, bookPath, mode } = options;
-    const position = getReadingAnchor(contentEl, chapterId);
-    if (!position) return;
+	/**
+	 * Один debounce на все сохранения:
+	 * scroll / смена главы / ручной вызов
+	 */
+	const debouncedSavePosition = debounce((options: SaveOptions) => {
+		savePosition(options);
+	}, 500);
 
-    saveReadingPosition(bookPath, position, mode()).catch((err: unknown) => {
-      console.error('Failed to save position:', err);
-    });
-  }
-
-  return {
-    savePosition,
-    debouncedSavePosition,
-  };
+	return {
+		savePosition,
+		debouncedSavePosition,
+	};
 }
 
 /**
- * Создать debounce-функцию для сохранения позиции при скролле.
- * Возвращает функцию-обработчик для onScroll.
+ * debounce handler для onScroll
  */
 export function createScrollSaveHandler(
-  getContentEl: () => HTMLDivElement | undefined,
-  getChapterId: () => string,
-  getBookPath: () => string,
-  getMode: () => ReaderMode,
+	getContentEl: () => HTMLDivElement | undefined,
+	getChapterId: () => string,
+	getBookPath: () => string,
+	getMode: () => ReaderMode,
+	debouncedSavePosition: (options: {
+		contentEl: HTMLDivElement;
+		chapterId: string;
+		bookPath: string;
+		mode: ReaderMode;
+	}) => void,
 ): () => void {
-  const handler = debounce(() => {
-    const contentEl = getContentEl();
-    const chapterId = getChapterId();
-    const bookPath = getBookPath();
-    const mode = getMode();
-    if (!contentEl || !chapterId || !bookPath) return;
+	return () => {
+		const contentEl = getContentEl();
+		const chapterId = getChapterId();
+		const bookPath = getBookPath();
 
-    const position = getReadingAnchor(contentEl, chapterId);
-    if (!position) return;
+		if (!contentEl || !chapterId || !bookPath) return;
 
-    saveReadingPosition(bookPath, position, mode).catch((err: unknown) => {
-      console.error('Failed to save position:', err);
-    });
-  }, 500);
-
-  return () => {
-    handler();
-  };
+		debouncedSavePosition({
+			contentEl,
+			chapterId,
+			bookPath,
+			mode: getMode(),
+		});
+	};
 }

@@ -42,6 +42,7 @@ export function ReaderContentPDF(props: ReaderContentProps) {
 			onScroll={props.onScroll}
 		>
 			<article
+			  lang={props.book.meta.language}
 				class='reader mx-auto px-6 py-8 overflow-x-auto'
 				style={{
 					'max-width': `${props.settings.columnWidth}px`,
@@ -96,6 +97,7 @@ export function ReaderContentСommon(props: ReaderContentProps) {
 			onScroll={props.onScroll}
 		>
 			<article
+				lang={props.book.meta.language}
 				class='reader mx-auto px-6 py-8 overflow-x-hidden'
 				style={{
 					'max-width': `${props.settings.columnWidth}px`,

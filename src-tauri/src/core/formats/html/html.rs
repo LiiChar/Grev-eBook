@@ -36,13 +36,21 @@ impl BookSource for HtmlLoader {
         };
 
         Ok(Book {
-            id: self.generate_id(title.clone(), path),
+            id: self.generate_id(title.clone()),
             meta: BookMeta {
                 title,
                 author: None,
                 language: Some(self.get_language(&vec![chapter.clone()]).unwrap_or("en".into())),
                 cover: None,
                 path: path.to_string_lossy().to_string(),
+                size: self.get_size(&path)?,
+                last_read_at: self.get_last_read_at(&path)?,
+                last_modified: self.get_last_modified(&path)?,
+                created_at: self.get_created_at(&path)?,
+                description: None,
+                chars_read: Some(self.get_chars_read(&vec![chapter.clone()])?),
+                progress_read: None,
+                genres: None,
             },
             chapters: Some(vec![chapter]),
             position: None,

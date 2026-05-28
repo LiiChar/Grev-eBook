@@ -39,53 +39,53 @@ export interface ButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement>
 const colorStyles: Record<ButtonColor, Record<ButtonVariant, string>> = {
 	primary: {
 		solid:
-			'bg-(--primary) text-(--primary-foreground) hover:bg-(--primary-hover)',
+			'bg-primary text-primary-foreground hover:bg-primary/60',
 
 		outline:
-			'border border-(--primary) text-(--primary) bg-transparent hover:bg-(--primary)/10',
+			'border border-primary text-primary bg-transparent hover:bg-primary/10',
 
-		soft: 'bg-(--primary)/10 text-(--primary) hover:bg-(--primary)/15',
+		soft: 'bg-primary/10 text-primary hover:bg-primary/15',
 
-		ghost: 'bg-transparent text-(--primary) hover:bg-(--primary)/10',
+		ghost: 'bg-transparent text-primary hover:bg-primary/10',
 
-		link: 'bg-transparent text-(--primary) hover:underline',
+		link: 'bg-transparent text-primary hover:underline',
 
 		dash:
-			'border border-dashed border-(--primary) text-(--primary) hover:bg-(--primary)/10',
+			'border border-dashed border-primary text-primary hover:bg-primary/10',
 	},
 
 	secondary: {
-		solid: 'bg-(--accent) text-white hover:bg-(--accent-hover)',
+		solid: 'bg-accent text-white hover:bg-accent/60',
 
 		outline:
-			'border border-(--accent) text-(--accent) bg-transparent hover:bg-(--accent)/10',
+			'border border-accent text-accent bg-transparent hover:bg-accent/10',
 
-		soft: 'bg-(--accent)/10 text-(--accent) hover:bg-(--accent)/15',
+		soft: 'bg-accent/10 text-accent hover:bg-accent/15',
 
-		ghost: 'bg-transparent text-(--accent) hover:bg-(--accent)/10',
+		ghost: 'bg-transparent text-accent hover:bg-accent/10',
 
-		link: 'bg-transparent text-(--accent) hover:underline',
+		link: 'bg-transparent text-accent hover:underline',
 
 		dash:
-			'border border-dashed border-(--accent) text-(--accent) hover:bg-(--accent)/10',
+			'border border-dashed border-accent text-accent hover:bg-accent/10',
 	},
 
 	neutral: {
 		solid:
-			'bg-(--surface-active) text-(--foreground) border border-(--border) hover:bg-(--surface-hover)',
+			'bg-secondary/60 text-foreground border border-border hover:bg-secondary/60',
 
 		outline:
-			'border border-(--border) text-(--foreground) bg-transparent hover:bg-(--surface-hover)',
+			'border border-border text-foreground bg-transparent hover:bg-secondary/60',
 
-		soft: 'bg-(--surface-hover) text-(--foreground) hover:bg-(--surface-active)',
+		soft: 'bg-secondary/60 text-foreground hover:bg-secondary/60',
 
-		ghost: 'bg-transparent text-(--foreground) hover:bg-(--surface-hover)',
+		ghost: 'bg-transparent text-foreground hover:bg-secondary/60',
 
 		link:
-			'bg-transparent text-(--foreground-muted) hover:text-(--foreground) hover:underline',
+			'bg-transparent text-muted-foreground hover:text-foreground hover:underline',
 
 		dash:
-			'border border-dashed border-(--border) text-(--foreground) hover:bg-(--surface-hover)',
+			'border border-dashed border-border text-foreground hover:bg-secondary/60',
 	},
 
 	accent: {
@@ -217,7 +217,7 @@ const Button: Component<ButtonProps> = props => {
 					'outline-none',
 
 					'focus-visible:ring-4',
-					'focus-visible:ring-(--ring)',
+					'focus-visible:ring-ring',
 
 					'disabled:pointer-events-none',
 					'disabled:opacity-50',
@@ -242,7 +242,7 @@ const Button: Component<ButtonProps> = props => {
 					'aspect-square px-0': local.square,
 					'rounded-full aspect-square px-0': local.circle,
 
-					'ring-2 ring-(--primary)': local.active,
+					'ring-2 ring-primary': local.active,
 				},
 
 				local.class,

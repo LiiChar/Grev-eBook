@@ -42,14 +42,13 @@ export const Select = <T extends string>(props: SelectProps<T>) => {
           w-full flex items-center justify-between gap-2
           px-3 py-2 text-sm
           rounded-[var(--radius)]
-          border border-[var(--border)]
-          bg-[var(--surface)]
-          text-[var(--foreground)]
+          border border-border
+          bg-secondary
+          text-foreground
           backdrop-blur-[var(--glass-blur)]
-          shadow-[var(--glass-shadow)]
-          hover:bg-[var(--surface-hover)]
+          hover:bg-secondary-hover/60
           focus:outline-none
-          focus:ring-2 focus:ring-[var(--ring)]
+          focus:ring-2 focus:ring-ring
         '
 			>
 				<span class='flex items-center gap-2 truncate'>
@@ -66,10 +65,9 @@ export const Select = <T extends string>(props: SelectProps<T>) => {
 					class='
             absolute z-50 mt-1 w-full overflow-hidden
             rounded-[var(--radius-lg)]
-            border border-[var(--border)]
-            bg-[var(--surface)]
+            border border-border
+            bg-secondary
             backdrop-blur-[var(--glass-blur)]
-            shadow-[var(--glass-shadow)]
           '
 				>
 					<For each={props.options}>
@@ -83,11 +81,11 @@ export const Select = <T extends string>(props: SelectProps<T>) => {
 								class={`
                   w-full px-3 py-2 text-left text-sm
                   flex items-center gap-2
-                  hover:bg-[var(--surface-hover)]
+                  hover:bg-secondary-hover/60
                   ${
 										option.value === props.value
-											? 'text-[var(--primary)]'
-											: 'text-[var(--foreground)]'
+											? 'text-primary'
+											: 'text-foreground'
 									}
                 `}
 							>
@@ -100,7 +98,7 @@ export const Select = <T extends string>(props: SelectProps<T>) => {
 					{/* Кастомный элемент */}
 					{props.extraSlot && (
 						<>
-							<div class='h-px bg-[var(--border)] my-1' />
+							<div class='h-px bg-border my-1' />
 							<div class='p-2'>{props.extraSlot}</div>
 						</>
 					)}

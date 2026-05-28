@@ -29,20 +29,17 @@ import { ReaderNotePopup } from '@/features/reader/components/ReaderNotePopup';
 import { useSelection } from '@/shared/hooks/useSelection';
 import { GlassButton } from '@/shared/ui/GlassButton';
 import { Icon } from '@/shared/ui/Icon';
-
-type ViewMode = 'chapters' | 'scroll';
+import Modal from '@/shared/ui/Modal';
+import { toast } from 'solid-sonner';
 
 export function ReaderPage() {
   const params = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-
-
-
   const { book, isLoading, notes, loadBook, position } = useBookLoader();
 
-  const { savePosition } = useReadingPosition();
+  const { savePosition, debouncedSavePosition } = useReadingPosition();
 
   const {
     nodeEditing,
@@ -74,16 +71,16 @@ export function ReaderPage() {
 				chapterId: currentChapter()?.id ?? '',
 			}),
 		onNavigateBack: () => navigate(`/book/${params.id}`),
-		onNextChapter: goToNextChapter,
-		onPrevChapter: goToPrevChapter,
+		onNextChapter: goToChapter.bind(null, reader.currentIndex + 1),
+		onPrevChapter: goToChapter.bind(null, reader.currentIndex - 1),
 	});
 
   const [showToc, setShowToc] = createSignal(false);
   const [showSettings, setShowSettings] = createSignal(false);
   const [toolPosition, setToolPosition] = createSignal<{x: number, y: number} | null>(null);
+	const [frame, setFrame] = createSignal<string | null>(null);
 
   let contentRef: HTMLDivElement | undefined;
-  let textRef: HTMLTextAreaElement | undefined;
 
   useSelection('.reader', {
     onSelect: (range, selection) => {
@@ -109,20 +106,15 @@ export function ReaderPage() {
 
   const hasMultipleChapters = createMemo(() => sortedChapters().length > 1);
 
-  const progress = createMemo(() => {
-    const total = sortedChapters().length;
-    if (total === 0) return 0;
-    return Math.round(((reader.currentIndex + 1) / total) * 100);
-  });
-
   const currentBookPath = createMemo(() => book()?.meta.path ?? '');
 
   const scrollSaveHandler = createScrollSaveHandler(
-    () => contentRef,
-    () => currentChapter()?.id ?? '',
-    currentBookPath,
-    () => settings.reader.mode,
-  );
+			() => contentRef,
+			() => currentChapter()?.id ?? '',
+			currentBookPath,
+			() => settings.reader.mode,
+			debouncedSavePosition,
+		);
 
 
 
@@ -155,191 +147,179 @@ export function ReaderPage() {
 			if (!position()) return;
 
 			scrollToAnchor(el, position()!);
+
+			contentRef?.addEventListener('click', e => {
+				const target = e.target as HTMLElement;
+
+				const link = target.closest('a');
+
+				if (!link) return;
+
+				const href = link.getAttribute('href');
+
+				if (!href) return;
+
+				// пропускаем якоря
+				if (href.startsWith('#')) return;
+
+				e.preventDefault();
+				e.stopPropagation();
+
+				setFrame(href);
+			});
+
     }, 300);
-
-        
-
-    queueMicrotask(() => {
-      textRef?.focus();
-    });
   });
 
-  function goToNextChapter() {
-		
-    savePosition({
-      contentEl: contentRef!,
-      chapterId: currentChapter()?.id ?? '',
-      bookPath: currentBookPath(),
-      mode: settings.reader.mode,
-    });
-		if (settings.reader.mode === 'chapters') {
-			if (reader.currentIndex < sortedChapters().length - 1)
-				setReader('currentIndex', reader.currentIndex + 1);
+
+	function goToChapter(index: number) {
+		if (contentRef) {
+			debouncedSavePosition({
+				contentEl: contentRef,
+				chapterId: currentChapter()?.id ?? '',
+				bookPath: currentBookPath(),
+				mode: settings.reader.mode,
+			});
 		}
-		scrollToTop(contentRef!, 'instant');
-  }
-
-  function goToPrevChapter() {
-    savePosition({
-      contentEl: contentRef!,
-      chapterId: currentChapter()?.id ?? '',
-      bookPath: currentBookPath(),
-      mode: settings.reader.mode,
-    });
 
 		if (settings.reader.mode === 'chapters') {
-			if (reader.currentIndex > 0)
-				setReader('currentIndex', reader.currentIndex - 1);
-		} 
-		scrollToTop(contentRef!, 'instant');
-  }
-
-  function goToChapter(index: number) {
-    if (settings.reader.mode === 'chapters') {
 			scrollToTop(contentRef!);
 		} else {
 			const chapterEl = document.getElementById(`chapter-${index}`);
-			if (chapterEl) {
-				chapterEl.scrollIntoView({ behavior: 'smooth' });
-			}
+			chapterEl?.scrollIntoView({ behavior: 'smooth' });
 		}
-    setShowToc(false);
-    savePosition({
-      contentEl: contentRef!,
-      chapterId: currentChapter()?.id ?? '',
-      bookPath: currentBookPath(),
-      mode: settings.reader.mode,
-    });
-  }
 
+		setShowToc(false);
+		setReader('currentIndex', index);
+	}
   return (
-		<div class='h-full w-full flex flex-col bg-(--background) overflow-hidden'>
-			<Show when={toolPosition()}>
-				<div
-					class='absolute flex gap-1 top-0 left-0 bg-(--background)/50 backdrop-blur-sm z-20 rounded-lg p-1 -translate-x-full'
-					style={{
-						transform: `translate(${toolPosition()?.x ?? 0}px, ${toolPosition()?.y ?? 0}px)`,
-					}}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-				>
-					<GlassButton
-						size='icon'
-						variant='ghost'
-						class='rounded-lg'
-						onClick={() => {
-                handleAddBookmark({
-                  contentEl: contentRef!,
-                  chapterId: currentChapter()?.id ?? '',
-                  bookPath: currentBookPath(),
-                })
-                setToolPosition(null);
-              }
-						}
-						title='Закладка (B)'
-					>
-						<Icon name='bookmark' size={18} />
-					</GlassButton>
-					<GlassButton
-						size='icon'
-						class='rounded-lg'
-						variant='ghost'
-						onClick={() => {
-                handleAddNote({
-                  contentEl: contentRef!,
-                  chapterId: currentChapter()?.id ?? '',
-                  position: toolPosition() ?? undefined,
-                })
-                setToolPosition(null);
-              }
-						}
-						title='Заметки (N)'
-					>
-						<Icon name='note' size={18} />
-					</GlassButton>
-				</div>
-			</Show>
-			{/* Note editor popup */}
-			<Show when={nodeEditing().visible}>
-				<ReaderNotePopup
-					nodeEditing={nodeEditing()}
-					textareaRef={(el: HTMLTextAreaElement | undefined) => {
-						textRef = el;
-					}}
-					onColorChange={(color: string) =>
-						setNodeEditing({ ...nodeEditing(), color })
-					}
-					onTextChange={(text: string) =>
-						setNodeEditing({ ...nodeEditing(), text })
-					}
-					onCancel={() => closeNoteEditor('cancel')}
-					onSave={() => createNote({ bookPath: currentBookPath() })}
-					onUpdateMarks={(noteId: string, color: string) => {
-						document
-							.querySelectorAll(`mark[data-note="${noteId}"]`)
-							.forEach((el: Element) => {
-								const elh = el as HTMLElement;
-								elh.style.backgroundColor = color;
-								elh.style.color = isHexLight(color) ? '#000' : '#fff';
-							});
-					}}
-				/>
-			</Show>
-
-			<BookLoader loading={isLoading} />
-
-			<Show when={!isLoading() && book()}>
-				<ReaderToolbar
-					book={book()!}
-					hasMultipleChapters={hasMultipleChapters()}
-					showControls={showControls()}
-					isFullscreen={isFullscreen()}
-					onNavigateBack={() => navigate(`/book/${params.id}`)}
-					onToggleToc={() => setShowToc(!showToc())}
-					onToggleSettings={() => setShowSettings(!showSettings())}
-					onToggleFullscreen={toggleFullscreen}
-				/>
-
-				<div class='flex-1 flex overflow-hidden relative'>
-					<TOCSidebar
-						show={showToc}
-						setShow={setShowToc}
-						chapters={sortedChapters}
-						toChapter={goToChapter}
-					/>
-
-					<SettingSidebar show={showSettings} setShow={setShowSettings} />
-
-					<ReaderContent
-						book={book()!}
-						currentIndex={() => reader.currentIndex}
-						contentRef={(el: HTMLDivElement | undefined) => {
-							contentRef = el;
-						}}
-						onScroll={scrollSaveHandler}
-						settings={{
-							columnWidth: settings.reader.column_width,
-							fontSize: settings.reader.font_size,
-							lineHeight: settings.reader.line_height,
+			<div class='h-full w-full flex flex-col bg-background overflow-hidden'>
+				<Modal isOpen={!!frame()} onClose={() => setFrame(null)} size='lg'>
+					<iframe
+						src={frame() ?? ''}
+						class='w-full h-full border-0'
+						loading='eager'
+						onError={() => {
+							toast.error('Ошибка загрузки сайта');
 						}}
 					/>
-				</div>
-
-				<Show when={settings.reader.mode === 'chapters'}>
-					<ReaderFooter
-						currentIndex={reader.currentIndex}
-						totalChapters={sortedChapters().length}
-						progress={progress()}
-						showControls={showControls()}
-						onPrevChapter={goToPrevChapter}
-						onNextChapter={goToNextChapter}
-						disabledPrev={reader.currentIndex === 0}
-						disabledNext={reader.currentIndex >= sortedChapters().length - 1}
+				</Modal>
+				<Show when={toolPosition()}>
+					<div
+						class='absolute flex gap-1 top-0 left-0 bg-background/50 backdrop-blur-sm z-20 rounded-lg p-1 -translate-x-full'
+						style={{
+							transform: `translate(${toolPosition()?.x ?? 0}px, ${toolPosition()?.y ?? 0}px)`,
+						}}
+						onClick={e => {
+							e.preventDefault();
+							e.stopPropagation();
+						}}
+					>
+						<GlassButton
+							size='icon'
+							variant='ghost'
+							class='rounded-lg'
+							onClick={() => {
+								handleAddBookmark({
+									contentEl: contentRef!,
+									chapterId: currentChapter()?.id ?? '',
+									bookPath: currentBookPath(),
+								});
+								setToolPosition(null);
+							}}
+							title='Закладка (B)'
+						>
+							<Icon name='bookmark' size={18} />
+						</GlassButton>
+						<GlassButton
+							size='icon'
+							class='rounded-lg'
+							variant='ghost'
+							onClick={() => {
+								handleAddNote({
+									contentEl: contentRef!,
+									chapterId: currentChapter()?.id ?? '',
+									position: toolPosition() ?? undefined,
+								});
+								setToolPosition(null);
+							}}
+							title='Заметки (N)'
+						>
+							<Icon name='note' size={18} />
+						</GlassButton>
+					</div>
+				</Show>
+				{/* Note editor popup */}
+				<Show when={nodeEditing().visible}>
+					<ReaderNotePopup
+						nodeEditing={nodeEditing()}
+						onColorChange={(color: string) =>
+							setNodeEditing({ ...nodeEditing(), color })
+						}
+						onTextChange={(text: string) =>
+							setNodeEditing({ ...nodeEditing(), text })
+						}
+						onCancel={() => closeNoteEditor('cancel')}
+						onSave={() => createNote({ bookPath: currentBookPath() })}
+						onUpdateMarks={(noteId: string, color: string) => {
+							document
+								.querySelectorAll(`mark[data-note="${noteId}"]`)
+								.forEach((el: Element) => {
+									const elh = el as HTMLElement;
+									elh.style.backgroundColor = color;
+									elh.style.color = isHexLight(color) ? '#000' : '#fff';
+								});
+						}}
 					/>
 				</Show>
-			</Show>
-		</div>
-	);
+
+				<BookLoader loading={isLoading} />
+
+				<Show when={!isLoading() && book()}>
+					<ReaderToolbar
+						book={book()!}
+						hasMultipleChapters={hasMultipleChapters()}
+						showControls={showControls()}
+						isFullscreen={isFullscreen()}
+						onNavigateBack={() => navigate(`/book/${params.id}`)}
+						onToggleToc={() => setShowToc(!showToc())}
+						onToggleSettings={() => setShowSettings(!showSettings())}
+						onToggleFullscreen={toggleFullscreen}
+					/>
+
+					<div class='flex-1 flex overflow-hidden relative'>
+						<TOCSidebar
+							show={showToc}
+							setShow={setShowToc}
+							chapters={sortedChapters}
+							toChapter={goToChapter}
+						/>
+
+						<SettingSidebar show={showSettings} setShow={setShowSettings} />
+
+						<ReaderContent
+							book={book()!}
+							currentIndex={() => reader.currentIndex}
+							contentRef={(el: HTMLDivElement | undefined) => {
+								contentRef = el;
+							}}
+							onScroll={scrollSaveHandler}
+							settings={{
+								columnWidth: settings.reader.column_width,
+								fontSize: settings.reader.font_size,
+								lineHeight: settings.reader.line_height,
+							}}
+						/>
+					</div>
+
+					<Show when={settings.reader.mode === 'chapters' && showControls()}>
+						<ReaderFooter
+							currentIndex={reader.currentIndex}
+							totalChapters={sortedChapters().length}
+							onSelect={goToChapter}
+						/>
+					</Show>
+				</Show>
+			</div>
+		);
 }

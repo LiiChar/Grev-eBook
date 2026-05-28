@@ -5,7 +5,7 @@
 
 import { createSignal, createUniqueId, onCleanup } from 'solid-js';
 import { addNote, updateNote as updateNoteApi } from '../../../shared/api/notes';
-import { toast } from '../../../shared/stores/toastStore';
+import { toast } from "solid-sonner"
 import { isHexLight } from '../../../shared/utils/color';
 import {
   findTextOffset,
@@ -81,7 +81,7 @@ export function useNotesManager(): UseNotesManagerReturn {
     const previewSnippet = getRangeStartSnippet(range, 120);
     let preview = previewSnippet || selectedText.slice(0, 120);
     const noteId = createUniqueId();
-    const color = '#fb7100';
+    const color = `hsl(${getComputedStyle(document.body).getPropertyValue('--primary')})`;
 
     const offsets = contentEl ? getTextOffsetsInRoot(contentEl, range) : null;
     const startOffset = offsets?.startOffset ?? textOffset;
@@ -169,7 +169,7 @@ export function useNotesManager(): UseNotesManagerReturn {
         const safeEnd = Math.min(total, Math.floor(endOffset));
         if (total > 0 && safeEnd > safeStart) {
           const didWrap_ = wrapOffsetsWithMarks(
-            contentEl, safeStart, safeEnd, note.id, note.highlight_color ?? '#fb7100',
+            contentEl, safeStart, safeEnd, note.id, note.highlight_color ?? `hsl(${getComputedStyle(document.body).getPropertyValue('--primary')})`,
           );
           if (didWrap_) {
             bindNoteMarks(note, contentEl, _onMarkClick);
@@ -184,7 +184,7 @@ export function useNotesManager(): UseNotesManagerReturn {
         const idx = rootText.indexOf(note.preview);
         if (idx !== -1) {
           const didWrap_ = wrapOffsetsWithMarks(
-            contentEl, idx, idx + note.preview.length, note.id, note.highlight_color ?? '#fb7100',
+            contentEl, idx, idx + note.preview.length, note.id, note.highlight_color ?? `hsl(${getComputedStyle(document.body).getPropertyValue('--primary')})`,
           );
           if (didWrap_) {
             // Мигрировать оффсеты
@@ -241,9 +241,9 @@ export function useNotesManager(): UseNotesManagerReturn {
           const mark = document.createElement('mark');
           mark.textContent = note.preview;
           mark.dataset.note = note.id;
-          mark.style.backgroundColor = note.highlight_color ?? '#fb7100';
+          mark.style.backgroundColor = note.highlight_color ?? `hsl(${getComputedStyle(document.body).getPropertyValue('--primary')})`;
           mark.style.borderRadius = '4px';
-          mark.style.color = isHexLight(note.highlight_color ?? '#fb7100') ? '#000' : '#fff';
+          mark.style.color = isHexLight(note.highlight_color ?? `hsl(${getComputedStyle(document.body).getPropertyValue('--primary')})`) ? '#000' : '#fff';
           mark.style.zIndex = '-1'
           after.parentNode!.replaceChild(mark, after);
         }
@@ -268,20 +268,20 @@ export function useNotesManager(): UseNotesManagerReturn {
     popup.dataset.popup = 'true';
     popup.className = `
       absolute z-50
-      bg-(--background)/80 backdrop-blur-lg
+      bg-background/80 backdrop-blur-lg
       rounded-xl
       -left-[2px] top-8
-      border border-[var(--border)]
+      border border-border
       pr-4
     `;
 
     popup.innerHTML = `
       <div class="popup-note flex gap-2 p-2 items-start">
         <label class="input-label inline-flex cursor-pointer">
-          <input type="color" class="sr-only" value="${note.highlight_color ?? '#fb7100'}" />
+          <input type="color" class="sr-only" value="${note.highlight_color ?? `hsl(${getComputedStyle(document.body).getPropertyValue('--primary')})`}" />
           <span class="w-6 h-6 rounded-full border shadow"></span>
         </label>
-        <div contenteditable class="text-(--foreground) text-left">${note.text.trim()}</div>
+        <div contenteditable class="text-foreground text-left">${note.text.trim()}</div>
       </div>
     `;
 

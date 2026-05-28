@@ -4,7 +4,7 @@ import { GlassPanel } from "../../shared/ui/GlassPanel";
 import { Icon } from "../../shared/ui/Icon";
 import { getReadingPosition } from "../../shared/api/reader";
 import { stripHtml } from "../../shared/utils/html";
-import { getFileExtension } from "../../shared/utils/file";
+import { getFileExtension, getCoverDataUrl } from "../../shared/utils/file";
 
 type BookCardProps = {
 	book: BookType;
@@ -46,17 +46,7 @@ export function BookCard(props: BookCardProps) {
 }
 
 export const BookCardGrid = (props: BookCardProps) => {
-	const coverUrl = createMemo(() => {
-		const cover = props.book.meta.cover;
-		if (!cover || cover.length === 0) return null;
-		try {
-			const uint8Array = new Uint8Array(cover);
-			const blob = new Blob([uint8Array], { type: 'image/jpeg' });
-			return URL.createObjectURL(blob);
-		} catch {
-			return null;
-		}
-	});
+	const coverUrl = createMemo(() => getCoverDataUrl(props.book.meta.cover));
 
 	const [percent, setPercent] = createSignal(0);
 
@@ -80,8 +70,8 @@ export const BookCardGrid = (props: BookCardProps) => {
 			onClick={props.onClick}
 			class={`
         group relative aspect-2/3 rounded-xl overflow-hidden cursor-pointer
-        bg-(--surface) hover:bg-(--surface-hover)
-        border border-(--border) hover:border-(--border-strong)
+        bg-secondary hover:bg-secondary/60
+        border border-border hover:border-border/60
         transition-all duration-200 hover:scale-[1.02] hover:shadow-xl
         animate-fade-in ${props.class}
       `}
@@ -93,14 +83,14 @@ export const BookCardGrid = (props: BookCardProps) => {
 						class='h-full transition-[width] duration-200'
 						style={{
 							width: `${percent()}%`,
-							background: 'var(--primary)',
+							background: 'hsl(var(--primary))',
 							'border-radius': '0 0 12px 12px',
 						}}
 					/>
 				</div>
 			)}
 			{/* Cover */}
-			<div class='absolute top-2 text-sm bg-(--background) rounded-md right-2 p-1 z-10 border-[1px] border-(--surface)'>
+			<div class='absolute top-2 text-sm glass rounded-md right-2 p-1 py-0 z-10 border-[1px] bg-secondary/60 border-secondary/40'>
 				{getFileExtension(props.book.meta.path)}
 			</div>
 			<Show
@@ -111,9 +101,9 @@ export const BookCardGrid = (props: BookCardProps) => {
 							<Icon
 								name='book'
 								size={32}
-								class='mx-auto mb-2 text-[var(--foreground-muted)]'
+								class='mx-auto mb-2 text-muted-foreground'
 							/>
-							<p class='text-xs text-[var(--foreground-muted)] line-clamp-3'>
+							<p class='text-xs text-muted-foreground line-clamp-3'>
 								{props.book.meta.title}
 							</p>
 						</div>
@@ -129,7 +119,7 @@ export const BookCardGrid = (props: BookCardProps) => {
 			</Show>
 
 			{/* Gradient overlay */}
-			<div class='absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[var(--background)]/100 via-[var(--background)]/60 to-transparent' />
+			<div class='absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-background/100 via-background/60 to-transparent' />
 
 			{/* Info overlay */}
 			<div class='absolute inset-x-0 bottom-0 p-3'>
@@ -148,17 +138,7 @@ export const BookCardGrid = (props: BookCardProps) => {
 
 
 export const BookCardList = (props: BookCardProps) => {
-  const coverUrl = createMemo(() => {
-		const cover = props.book.meta.cover;
-		if (!cover || cover.length === 0) return null;
-		try {
-			const uint8Array = new Uint8Array(cover);
-			const blob = new Blob([uint8Array], { type: 'image/jpeg' });
-			return URL.createObjectURL(blob);
-		} catch {
-			return null;
-		}
-	});
+  const coverUrl = createMemo(() => getCoverDataUrl(props.book.meta.cover));
 
 	const [percent, setPercent] = createSignal(0);
 
@@ -182,7 +162,7 @@ export const BookCardList = (props: BookCardProps) => {
 		<GlassPanel
 			class={` 
            flex items-center gap-4 cursor-pointer 
-          hover:bg-[var(--surface-hover)]  transition-all duration-150
+          hover:bg-secondary-hover/60  transition-all duration-150
           animate-fade-in stagger-${Math.min(props.index + 1, 8)} ${props.class}
         `}
 			padding='sm'
@@ -195,14 +175,14 @@ export const BookCardList = (props: BookCardProps) => {
 					style={{ 'z-index': 0 }}
 				>
 					<div
-						class='h-full transition-[width] duration-200 bg-(--primary)/10'
+						class='h-full transition-[width] duration-200 bg-primary/10'
 						style={{ width: `${percent()}%` }}
 					/>
 				</div>
 			)}
 			
 			{/* Cover */}
-			<div class='w-12 h-16 rounded-md overflow-hidden bg-[var(--surface-hover)] shrink-0 relative z-10'>
+			<div class='w-12 h-16 rounded-md overflow-hidden bg-secondary-hover/60 shrink-0 relative z-10'>
 				<Show
 					when={coverUrl()}
 					fallback={
@@ -210,7 +190,7 @@ export const BookCardList = (props: BookCardProps) => {
 							<Icon
 								name='book'
 								size={20}
-								class='text-[var(--foreground-muted)]'
+								class='text-muted-foreground'
 							/>
 						</div>
 					}
@@ -220,7 +200,7 @@ export const BookCardList = (props: BookCardProps) => {
 							<Icon
 								name='book'
 								size={20}
-								class='text-[var(--foreground-muted)]'
+								class='text-muted-foreground'
 							/>
 						)}
 						src={coverUrl()!}
@@ -236,20 +216,20 @@ export const BookCardList = (props: BookCardProps) => {
 				<h3 class='font-medium truncate'>
 					{props.book.meta.title || 'Без названия'}
 				</h3>
-				<p class='text-sm text-[var(--foreground-muted)] truncate'>
+				<p class='text-sm text-muted-foreground truncate'>
 					{props.book.meta.author || 'Неизвестный автор'}
 				</p>
 			</div>
 
 			{/* Chapters count */}
-			<span class='text-xs text-[var(--foreground-muted)] shrink-0 relative z-10'>
+			<span class='text-xs text-muted-foreground shrink-0 relative z-10'>
 				{props.book.chapters?.length ?? 0} глав
 			</span>
 
 			<Icon
 				name='chevronRight'
 				size={18}
-				class='text-[var(--foreground-muted)] relative z-10'
+				class='text-muted-foreground relative z-10'
 			/>
 		</GlassPanel>
 	);

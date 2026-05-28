@@ -41,7 +41,7 @@ export function GlassPanel(props: GlassPanelProps) {
     const variant = variantMap[local.variant ?? 'default'];
     const rounded = roundedMap[local.rounded ?? 'lg'];
     const padding = paddingMap[local.padding ?? 'md'];
-    return `${variant} ${rounded} ${padding} ${local.class ?? ''}`.trim();
+    return `overflow-hidden ${variant} ${rounded} ${padding} ${local.class ?? ''}`.trim();
   };
 
   return (

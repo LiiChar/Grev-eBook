@@ -2,8 +2,8 @@ use std::path::PathBuf;
 use piper_rs::Piper;
 
 pub fn generate_wav(text: &str, path: &PathBuf) {
-  let config_path = PathBuf::from("E:/code/pet-project/Grev/src-tauri/resources/tts/ru/denis/ru_RU-denis-medium.onnx.json");
-  let onnx_path = PathBuf::from("E:/code/pet-project/Grev/src-tauri/resources/tts/ru/denis/ru_RU-denis-medium.onnx");
+  let config_path = PathBuf::from("E:/code/pet-project/Uni/src-tauri/resources/tts/ru/denis/ru_RU-denis-medium.onnx.json");
+  let onnx_path = PathBuf::from("E:/code/pet-project/Uni/src-tauri/resources/tts/ru/denis/ru_RU-denis-medium.onnx");
 
   let piper = Piper::new(&model, &config).unwrap();
   let (samples, sample_rate) = piper.create(text.to_string(), false, 0, None, None, None).unwrap();

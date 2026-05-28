@@ -2,7 +2,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { BookList } from "../../components/book/BookList";
 import Button from "../../shared/ui/Button";
 import Modal from "../../shared/ui/Modal";
-import { toast } from "../../shared/stores/toastStore";
+import { toast } from 'solid-sonner';
 import { addBooks, getBooks } from "../../shared/api/book";
 import { mergeBooksById } from "../../shared/stores/readerStore";
 import { createSignal, onMount } from "solid-js";

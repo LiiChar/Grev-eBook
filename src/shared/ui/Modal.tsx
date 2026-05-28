@@ -1,5 +1,7 @@
-// src/components/Modal.tsx
-import { Component, createSignal, onMount, onCleanup } from 'solid-js';
+import { Component, createEffect, onCleanup, Show } from 'solid-js';
+import { Icon } from './Icon';
+import { X } from 'lucide-solid';
+import Button from './Button';
 
 interface ModalProps {
 	isOpen: boolean;
@@ -12,86 +14,61 @@ interface ModalProps {
 }
 
 const Modal: Component<ModalProps> = props => {
-	let dialogRef: HTMLDialogElement | undefined;
+	let dialogRef!: HTMLDialogElement;
 
-	// Управление открытием/закрытием через JS
-	onMount(() => {
-		if (props.isOpen && dialogRef) {
-			dialogRef.showModal();
-		}
-	});
-
-	// Следим за изменением isOpen
-	const handleOpenChange = () => {
-		if (props.isOpen && dialogRef && !dialogRef.open) {
-			dialogRef.showModal();
-		} else if (!props.isOpen && dialogRef && dialogRef.open) {
-			dialogRef.close();
-		}
-	};
-
-	// Закрытие по Escape или клику на backdrop
-	const handleClose = () => {
-		props.onClose();
-	};
-
-	// Применяем scrollbar-gutter к body при открытии (для предотвращения сдвига)
-	onMount(() => {
+	createEffect(() => {
+		if (!dialogRef) return;
 		if (props.isOpen) {
-			document.body.style.scrollbarGutter = 'stable';
+			if (!dialogRef.open) dialogRef.showModal();
+			document.body.style.overflow = 'hidden';
+		} else {
+			if (dialogRef.open) dialogRef.close();
+			document.body.style.overflow = '';
 		}
 	});
 
 	onCleanup(() => {
-		// Сбрасываем scrollbar-gutter при закрытии последнего модального окна
-		// (в реальном приложении лучше использовать глобальный счётчик открытых модалок)
-		document.body.style.scrollbarGutter = '';
+		document.body.style.overflow = '';
 	});
 
-	// Классы размера
 	const sizeClasses = {
 		sm: 'max-w-sm',
 		md: 'max-w-md',
-		lg: 'max-w-lg',
+		lg: 'w-[80%] h-full',
 		xl: 'max-w-xl',
-		full: 'w-11/12 max-w-5xl',
+		full: 'w-screen h-screen m-0 rounded-none',
 	};
 
-	// Классы позиции
-	const positionClass =
-		props.position === 'top'
-			? 'modal-top'
-			: props.position === 'bottom'
-			? 'modal-bottom'
-			: 'modal-middle'; // default
-
 	return (
-		<dialog
-			ref={dialogRef}
-			class={`modal z-10 ${positionClass}`}
-			onClose={handleClose}
-			onClick={e => {
-				// Закрытие по клику на backdrop (область вне modal-box)
-				if (props.closeOnBackdrop && e.target === dialogRef) {
-					props.onClose();
-				}
-			}}
-		>
-			<div class={`modal-box ${sizeClasses[props.size || 'md']}`}>
-				{props.title && <h3 class='text-lg font-bold'>{props.title}</h3>}
-				<div class='py-4'>{props.children}</div>
-				<div class='modal-action'>
-					<button class='btn' onClick={props.onClose}>
-						Close
-					</button>
+		<Show when={props.isOpen}>
+			<dialog
+				ref={dialogRef}
+				class='fixed inset-0 z-[999] glass w-full h-full flex items-center justify-center p-4 open:animate-fade-in'
+				onClose={props.onClose}
+				onCancel={props.onClose}
+				onClick={e => {
+					if (props.closeOnBackdrop !== false && e.target === dialogRef) {
+						props.onClose();
+					}
+				}}
+			>
+				<div
+					class={`bg-background rounded-xl shadow-xl overflow-hidden w-full ${sizeClasses[props.size ?? 'md']}`}
+				>
+					{props.title && (
+						<div class='px-5 py-4 border-b font-semibold text-lg'>{props.title}</div>
+					)}
+					{props.children}
+					<Button
+						variant='outline'
+						class='absolute w-9.5 h-9.5 min-w-9.5 min-h-9.5 max-w-9.5 max-h-9.5 top-1 right-1 -translate-x-5 rounded-lg translate-y-5 p-2 text-2xl cursor-pointer'
+						onClick={props.onClose}
+					>
+						<X />
+					</Button>
 				</div>
-			</div>
-			{props.closeOnBackdrop && (
-				<form method='dialog' class='modal-backdrop'>
-					<button onClick={props.onClose}>close</button>
-				</form>
-			)}
-		</dialog>
+			</dialog>
+		</Show>
 	);
 };
 

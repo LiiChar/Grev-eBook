@@ -7,7 +7,7 @@ export function Hotkey(props: { label: string; keys: string[] }) {
 			<div class='flex gap-1'>
 				<For each={props.keys}>
 					{key => (
-						<kbd class='px-2 py-1 text-xs font-mono rounded bg-[var(--surface-hover)] border border-[var(--border)]'>
+						<kbd class='px-2 py-1 text-xs font-mono rounded bg-secondary-hover/60 border border-border'>
 							{key}
 						</kbd>
 					)}

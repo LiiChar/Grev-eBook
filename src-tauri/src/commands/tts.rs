@@ -7,7 +7,7 @@ pub fn generate_tts_chunks(app: tauri::AppHandle, text: String) -> Vec<String> {
     let chunks = split_text(&text);
     let mut paths = vec![];
 
-    let base_dir = PathBuf::from("E:/code/pet-project/Grev/src-tauri/resources/tts_cache");
+    let base_dir = PathBuf::from("E:/code/pet-project/Uni/src-tauri/resources/tts_cache");
     fs::create_dir_all(&base_dir).unwrap();
 
     for chunk in chunks {

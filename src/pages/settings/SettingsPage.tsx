@@ -20,7 +20,7 @@ import { ToggleSwitch } from '../../shared/ui/ToggleSwitch';
 import { Hotkey } from '../../shared/ui/Hotkey';
 import { clearStore } from '@/shared/api/book';
 import Button from '@/shared/ui/Button';
-import { toast } from '@/shared/stores/toastStore';
+import { toast } from 'solid-sonner';
 import { resetDefaultReader } from '@/shared/stores/readerStore';
 
 type SettingsSection = 'general' | 'reader' | 'ui' | 'hotkeys';
@@ -63,7 +63,7 @@ export function SettingsPage() {
 								e.stopPropagation();
 								setIsDropdownOpen(!isDropdownOpen());
 							}}
-							class='w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-hover)] transition-colors border border-[var(--border)] text-left'
+							class='w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-secondary hover:bg-secondary-hover/60 transition-colors border border-border text-left'
 						>
 							<div class='flex items-center gap-3'>
 								<Icon name={currentSection().icon} size={18} />
@@ -77,7 +77,7 @@ export function SettingsPage() {
 						</button>
 
 						<Show when={isDropdownOpen()}>
-							<div class='absolute top-full left-0 right-0 mt-1 bg-[var(--surface)] border border-[var(--border)] backdrop-blur-lg rounded-lg shadow-lg z-50 overflow-hidden'>
+							<div class='absolute top-full left-0 right-0 mt-1 bg-secondary border border-border backdrop-blur-lg rounded-lg shadow-lg z-50 overflow-hidden'>
 								<For each={sections}>
 									{section => (
 										<button
@@ -90,8 +90,8 @@ export function SettingsPage() {
                         transition-colors text-left
                         ${
 																									activeSection() === section.id
-																										? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
-																										: 'hover:bg-[var(--surface-hover)]'
+																										? 'bg-primary text-primary-foreground'
+																										: 'hover:bg-secondary-hover/60'
 																								}
                       `}
 										>
@@ -141,13 +141,13 @@ export function SettingsPage() {
 									label='Режим чтения'
 									description='Выберите режим отображения'
 								>
-									<div class='flex items-center gap-1 p-0.5 rounded-lg w-full bg-[var(--surface-hover)]'>
+									<div class='flex items-center gap-1 p-0.5 rounded-lg w-full bg-secondary-hover/60'>
 										<button
 											onClick={() => setReaderMode('scroll')}
 											class={`px-3 py-1.5 w-full text-xs rounded-md transition-colors ${
 												settings.reader.mode === 'scroll'
-													? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
-													: 'hover:bg-[var(--surface-active)]'
+													? 'bg-primary text-primary-foreground'
+													: 'hover:bg-secondary/80'
 											}`}
 										>
 											Свиток
@@ -156,8 +156,8 @@ export function SettingsPage() {
 											onClick={() => setReaderMode('chapters')}
 											class={`px-3 py-1.5 w-full text-xs rounded-md transition-colors ${
 												settings.reader.mode === 'chapters'
-													? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
-													: 'hover:bg-[var(--surface-active)]'
+													? 'bg-primary text-primary-foreground'
+													: 'hover:bg-secondary/80'
 											}`}
 										>
 											Главы
@@ -315,13 +315,13 @@ export function ReaderSettings ({variant = 'default'}: {variant?: 'default' | 'm
 	return (
 		<SettingsGroup variant={variant} title='Настройки чтения'>
 			<SettingRow variant={variant} label='Режим чтения'>
-				<div class='flex items-center gap-1 p-0.5 rounded-lg w-full bg-[var(--surface-hover)]'>
+				<div class='flex items-center gap-1 p-0.5 rounded-lg w-full bg-secondary-hover/60'>
 					<button
 						onClick={() => setReaderMode('scroll')}
 						class={`px-3 py-1 w-full text-xs rounded-md transition-colors ${
 							settings.reader.mode === 'scroll'
-								? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
-								: 'hover:bg-[var(--surface-active)]'
+								? 'bg-primary text-primary-foreground'
+								: 'hover:bg-secondary/80'
 						}`}
 					>
 						Свиток
@@ -330,8 +330,8 @@ export function ReaderSettings ({variant = 'default'}: {variant?: 'default' | 'm
 						onClick={() => setReaderMode('chapters')}
 						class={`px-3 py-1 w-full text-xs rounded-md transition-colors ${
 							settings.reader.mode === 'chapters'
-								? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
-								: 'hover:bg-[var(--surface-active)]'
+								? 'bg-primary text-primary-foreground'
+								: 'hover:bg-secondary/80'
 						}`}
 					>
 						Главы
@@ -495,7 +495,7 @@ function SettingsGroup(props: { title: string; children: any; variant?: 'default
 				class={
 					props.variant === 'minimal'
 						? 'border-0!'
-						: 'divide-y divide-(--border)'
+						: 'divide-y divide-border'
 				}
 				padding='none'
 				rounded='lg'
@@ -523,7 +523,7 @@ function SettingRow(props: {
 			<div class='flex-1 relative z-1 flex-col'>
 				<p class='font-medium text-sm'>{props.label}</p>
 				<Show when={props.description}>
-					<p class='text-xs text-[var(--foreground-muted)] mt-0.5'>
+					<p class='text-xs text-muted-foreground mt-0.5'>
 						{props.description}
 					</p>
 				</Show>

@@ -8,7 +8,7 @@ use crate::{
         },
         storage::{load_state, save_state, STORE_PATH},
     },
-    state::{AppState, ReaderState, SettingStore},
+    state::{ReaderState, SettingStore},
 };
 
 /// ---------- reader ----------
@@ -254,13 +254,6 @@ pub async fn update_settings(app: AppHandle, settings: SettingStore) -> Result<S
     state.setting = settings;
     save_state(&store, &state).map_err(|e| e.to_string())?;
     Ok(state.setting)
-}
-
-/// ---------- helpers ----------
-
-async fn persist(_app: &AppHandle, _state: &AppState) -> Result<(), String> {
-    // persist is no-op now; commands save directly to the store.
-    Ok(())
 }
 
 fn now_ts() -> i64 {

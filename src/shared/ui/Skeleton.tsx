@@ -6,7 +6,7 @@ export const Skeleton = (props: ComponentProps<'div'>) => {
 
 	return (
 		<div
-			class={cn('animate-pulse rounded-md bg-(--foreground)/20', local.class)}
+			class={cn('animate-pulse rounded-md bg-foreground/20', local.class)}
 			{...rest}
 		/>
 	);

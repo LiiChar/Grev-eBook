@@ -42,12 +42,17 @@ export function ThemeSelector(props: {
 						onClick={e => handleClick(e, theme)}
 						class={`
               px-3 py-2 rounded-lg text-xs font-medium
+							border-border bg-background text-foreground 
               border transition-all relative z-1
               ${
-								props.value === theme
-									? 'border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]'
-									: 'border-[var(--border)] hover:bg-[var(--surface-hover)] hover:border-[var(--border-strong)]'
-							}
+															props.value === theme
+																? 'border-primary bg-primary text-primary-foreground'
+																: 'hover:bg-secondary-hover/60 hover:border-border/60'
+														}
+							${theme === 'light' && 'light'}
+							${theme === 'dark' && 'dark'}
+							${theme === 'sepia' && 'sepia'}
+							${theme === 'night' && 'night'}
             `}
 					>
 						{theme === 'light' && '☀️ Светлая'}

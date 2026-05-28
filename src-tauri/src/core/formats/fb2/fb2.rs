@@ -1,7 +1,6 @@
 use std::{collections::HashMap, fs, io::Read, path::Path};
 
 use anyhow::{bail, Result};
-use base64::{engine::general_purpose, Engine as _};
 use encoding_rs::Encoding;
 use roxmltree::Document;
 use uuid::Uuid;
@@ -40,6 +39,9 @@ impl BookSource for Fb2Loader {
 
         let title = find_text(&doc, "book-title").unwrap_or_else(|| "Untitled".to_string());
         let author = build_author(&doc);
+
+        let annotation = build_annotation(&doc);
+        let genres = build_genres(&doc);
         
         // Собираем все изображения из <binary> элементов
         let images = extract_images(&doc);
@@ -56,13 +58,21 @@ impl BookSource for Fb2Loader {
         let language = find_text(&doc, "lang").unwrap_or(self.get_language(&chapters.clone().unwrap_or(vec![])).unwrap_or("en".into()));
 
         Ok(Book {
-            id: self.generate_id(title.clone(), path),
+            id: self.generate_id(title.clone()),
             meta: BookMeta {
                 title,
                 author,
                 language: Some(language),
                 cover,
                 path: path.to_string_lossy().to_string(),
+                size: self.get_size(&path)?,
+                last_read_at: self.get_last_read_at(&path)?,
+                last_modified: self.get_last_modified(&path)?,
+                created_at: self.get_created_at(&path)?,
+                description: annotation,
+                chars_read: Some(self.get_chars_read(&chapters.clone().unwrap_or(vec![]))?),
+                progress_read: None,
+                genres: genres
             },
             chapters,
             position: None,
@@ -115,6 +125,35 @@ fn find_text(doc: &Document<'_>, tag: &str) -> Option<String> {
         .find(|n| n.is_element() && n.tag_name().name() == tag)
         .and_then(|n| n.text())
         .map(|text| text.trim().to_string())
+}
+
+fn build_genres(doc: &Document<'_>) -> Option<Vec<String>> {
+    let node_genres = doc
+        .descendants()
+        .find(|n| n.is_element() && n.tag_name().name() == "genre")?;
+    let mut genres = Vec::new();
+    for genre in node_genres.descendants() {
+        if let Some(text) = genre.text() {
+            if genres.contains(&text.to_string()) {
+                continue;
+            }
+            genres.push(text.trim().to_string());
+        }
+    }
+    Some(genres)
+}
+
+fn build_annotation(doc: &Document<'_>) -> Option<String> {
+    let annotation = doc
+        .descendants()
+        .find(|n| n.is_element() && n.tag_name().name() == "annotation")?;
+    let content = annotation
+        .descendants()
+        .find(|n| n.is_element() && n.tag_name().name() == "p")
+        .and_then(|n| n.text())
+        .map(|s| s.trim().to_string());
+
+    content
 }
 
 fn build_author(doc: &Document<'_>) -> Option<String> {
@@ -185,7 +224,7 @@ fn extract_images(doc: &Document<'_>) -> HashMap<String, String> {
 }
 
 /// Извлекает обложку из <coverpage><image l:href="#..."/></coverpage>
-fn extract_cover(doc: &Document<'_>, images: &HashMap<String, String>) -> Option<Vec<u8>> {
+fn extract_cover(doc: &Document<'_>, images: &HashMap<String, String>) -> Option<String> {
     // Ищем <coverpage>
     let coverpage = doc
         .descendants()
@@ -204,16 +243,7 @@ fn extract_cover(doc: &Document<'_>, images: &HashMap<String, String>) -> Option
     // Убираем символ # в начале
     let image_id = href.trim_start_matches('#');
 
-    // Находим изображение в HashMap и декодируем base64
-    images.get(image_id).and_then(|data_uri| {
-        // data_uri имеет формат "data:image/jpeg;base64,<base64_data>"
-        if let Some(comma_pos) = data_uri.find(',') {
-            let base64_part = &data_uri[comma_pos + 1..];
-            general_purpose::STANDARD.decode(base64_part).ok()
-        } else {
-            None
-        }
-    })
+    images.get(image_id).cloned()
 }
 
 /// Преобразует FB2 элемент в HTML
@@ -357,49 +387,26 @@ fn fb2_to_html(node: roxmltree::Node, images: &HashMap<String, String>) -> Strin
 }
 
 fn extract_sections(doc: &Document<'_>, images: &HashMap<String, String>) -> Option<Vec<Chapter>> {
-    let body = doc.descendants().find(|n| {
-        n.is_element() && n.tag_name().name() == "body" && n.attribute("name").is_none()
-    })?;
-
-    let sections: Vec<_> = body
-        .children()
-        .filter(|n| n.is_element() && n.tag_name().name() == "section")
-        .collect();
-
-    // если секций нет — fallback: конвертируем весь body в HTML
-    if sections.is_empty() {
-        let html = fb2_to_html(body, images);
-        return Some(vec![Chapter {
-            id: Uuid::new_v4().to_string(),
-            title: None,
-            html,
-            order: 0,
-        }]);
-    }
+    let body = doc
+        .descendants()
+        .find(|n| {
+            n.is_element()
+                && n.tag_name().name() == "body"
+                && n.attribute("name").is_none()
+        })
+        .or_else(|| {
+            doc.descendants()
+                .find(|n| n.is_element() && n.tag_name().name() == "body")
+        })?;
 
     let mut chapters = Vec::new();
     let mut order = 0;
 
-    for section in sections {
-        let title = extract_section_title(section)
-            .map(|t| normalize_text(&t))
-            .filter(|t| !t.is_empty());
+    collect_sections_recursive(body, images, &mut chapters, &mut order);
 
-        // Конвертируем содержимое секции в HTML
-        let html = fb2_to_html(section, images);
-
-        chapters.push(Chapter {
-            id: Uuid::new_v4().to_string(),
-            title,
-            html,
-            order,
-        });
-        order += 1;
-    }
-
-    // Если не удалось извлечь секции, пробуем конвертировать весь body
     if chapters.is_empty() {
         let html = fb2_to_html(body, images);
+
         chapters.push(Chapter {
             id: Uuid::new_v4().to_string(),
             title: None,
@@ -409,6 +416,43 @@ fn extract_sections(doc: &Document<'_>, images: &HashMap<String, String>) -> Opt
     }
 
     Some(chapters)
+}
+
+fn collect_sections_recursive(
+    node: roxmltree::Node,
+    images: &HashMap<String, String>,
+    chapters: &mut Vec<Chapter>,
+    order: &mut usize,
+) {
+    for child in node.children().filter(|n| {
+        n.is_element() && n.tag_name().name() == "section"
+    }) {
+        let nested_sections: Vec<_> = child
+            .children()
+            .filter(|n| n.is_element() && n.tag_name().name() == "section")
+            .collect();
+
+        // если есть вложенные section — идём глубже
+        if !nested_sections.is_empty() {
+            collect_sections_recursive(child, images, chapters, order);
+        } else {
+            // лист дерева = полноценная глава
+            let title = extract_section_title(child)
+                .map(|t| normalize_text(&t))
+                .filter(|t| !t.is_empty());
+
+            let html = fb2_to_html(child, images);
+
+            chapters.push(Chapter {
+                id: Uuid::new_v4().to_string(),
+                title,
+                html,
+                order: *order,
+            });
+
+            *order += 1;
+        }
+    }
 }
 
 fn extract_section_title(section: roxmltree::Node) -> Option<String> {

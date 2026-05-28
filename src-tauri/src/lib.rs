@@ -10,7 +10,7 @@ use commands::{
     add_book, add_bookmark, add_books, add_note, clear_store, delete_bookmark, delete_note,
     get_book, get_bookmark, get_bookmarks, get_books, get_notes, get_reader_state,
     get_reading_position, get_settings, open_book, save_reading_position, set_current_book,
-    update_note, update_settings,
+    update_note, update_settings, get_books_version
 };
 use tauri_plugin_store::StoreExt;
 
@@ -44,6 +44,7 @@ pub fn run() {
             add_books,
             add_book,
             clear_store,
+            get_books_version,
             get_reader_state,
             set_current_book,
             save_reading_position,

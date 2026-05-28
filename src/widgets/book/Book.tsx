@@ -2,8 +2,9 @@ import { useNavigate, useParams } from '@solidjs/router';
 import { createSignal, onMount, Show, createMemo, batch } from 'solid-js';
 import { BookPageParams } from '../../shared/types/router';
 import { Book as BookType } from '../../shared/types/book';
-import { addBook, openBook } from '../../shared/api/book';
-import { toast } from '../../shared/stores/toastStore';
+import { openBook } from '../../shared/api/book';
+import { getCoverDataUrl } from '../../shared/utils/file';
+import { toast } from 'solid-sonner';
 
 export const Book = () => {
 	const { id } = useParams<BookPageParams>();
@@ -38,18 +39,7 @@ export const Book = () => {
 		}
 	});
 
-	const coverUrl = createMemo(() => {
-		const cover = book()?.meta.cover;
-		if (!cover || cover.length === 0) return null;
-		try {
-			const uint8Array = new Uint8Array(cover);
-			const blob = new Blob([uint8Array], { type: 'image/jpeg' });
-			return URL.createObjectURL(blob);
-		} catch (e) {
-			console.error('Failed to create cover URL', e);
-			return null;
-		}
-	});
+	const coverUrl = createMemo(() => getCoverDataUrl(book()?.meta.cover));
 
 	const handleSaveNotes = () => {
 		localStorage.setItem(`book:${id}:notes`, notes());

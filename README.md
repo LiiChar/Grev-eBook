@@ -1,4 +1,4 @@
-# 📖 Grev
+# 📖 Uni
 
 > Десктопное приложение для чтения электронных книг с современным интерфейсом и поддержкой популярных форматов.
 
@@ -38,11 +38,11 @@
 
 ## ✨ Скриншоты
 
-![Скриншот страницы библиотеки](https://github.com/LiiChar/Grev-eBook/blob/main/screenshot/image1.png)
+![Скриншот страницы библиотеки](https://github.com/LiiChar/Uni-eBook/blob/main/screenshot/image1.png)
 
-![Скриншот страницы книги](https://github.com/LiiChar/Grev-eBook/blob/main/screenshot/image2.png)
+![Скриншот страницы книги](https://github.com/LiiChar/Uni-eBook/blob/main/screenshot/image2.png)
 
-![Скриншот читалки](https://github.com/LiiChar/Grev-eBook/blob/main/screenshot/image3.png)
+![Скриншот читалки](https://github.com/LiiChar/Uni-eBook/blob/main/screenshot/image3.png)
 
 
 ---
@@ -67,8 +67,8 @@
 ## 🚀 Быстрый старт
 
 ```bash
-git clone https://github.com/your-username/grev.git
-cd grev
+git clone https://github.com/your-username/uni.git
+cd uni
 yarn install
 yarn tauri dev        # режим разработки
 yarn tauri build      # production-сборка

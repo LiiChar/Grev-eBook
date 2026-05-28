@@ -7,7 +7,7 @@ import { createSignal } from 'solid-js';
 import { addBookmark, getBookmark } from '../../../shared/api/bookmarks';
 import { getReadingAnchor } from '../../../shared/utils/anchor';
 import { scrollToAnchor } from '../../../shared/utils/anchor';
-import { toast } from '../../../shared/stores/toastStore';
+import { toast } from "solid-sonner"
 import { normalizeWhitespace } from '../utils/noteHighlight';
 import { getRangeStartSnippet, findAllAndSelect } from '../utils/textSelection';
 import type { Bookmark } from '../../../shared/api/bookmarks';

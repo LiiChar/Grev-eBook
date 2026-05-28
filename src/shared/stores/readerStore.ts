@@ -112,6 +112,13 @@ export const resetDefaultReader = () => {
   setReader(defaultReader);
 }
 
+export const updateBook = (book: Book) => {
+  const index = reader.books.findIndex(b => b.id === book.id);
+  if (index >= 0) {
+    setReader('books', reader.books.map((b, i) => i === index ? book : b));
+  }
+}
+
 // Listen for backend store changes and refresh books when signaled
 if (typeof window !== 'undefined') {
   try {

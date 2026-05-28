@@ -28,27 +28,27 @@ export function GlassButton(props: GlassButtonProps) {
 
   const variants: Record<string, string> = {
     default: `
-      glass hover:bg-[var(--surface-hover)] active:bg-[var(--surface-active)]
-      text-[var(--foreground)] focus-visible:ring-[var(--ring)]
+      glass hover:bg-secondary-hover/60! active:bg-secondary/80
+      text-foreground focus-visible:ring-ring
     `,
     primary: `
-      bg-[var(--primary)] hover:bg-[var(--primary-hover)]
-      text-[var(--primary-foreground)] shadow-lg shadow-[var(--primary)]/20
-      focus-visible:ring-[var(--primary)]
+      bg-primary hover:bg-primary/60
+      text-primary-foreground shadow-lg shadow-primary/20
+      focus-visible:ring-primary
     `,
     accent: `
-      bg-[var(--accent)] hover:bg-[var(--accent-hover)]
-      text-[var(--accent-foreground)] shadow-lg shadow-[var(--accent)]/20
-      focus-visible:ring-[var(--accent)]
+      bg-accent hover:bg-accent/60
+      text-accent-foreground shadow-lg shadow-accent/20
+      focus-visible:ring-accent
     `,
     ghost: `
-      bg-transparent hover:bg-[var(--surface)] active:bg-[var(--surface-hover)]
-      text-[var(--foreground)] focus-visible:ring-[var(--ring)]
+      bg-transparent hover:bg-secondary active:bg-secondary-hover/60
+      text-foreground focus-visible:ring-ring
     `,
     destructive: `
-      bg-[var(--destructive)] hover:bg-[var(--destructive-hover)]
-      text-[var(--destructive-foreground)] shadow-lg shadow-[var(--destructive)]/20
-      focus-visible:ring-[var(--destructive)]
+      bg-destructive hover:bg-destructive/60
+      text-destructive-foreground shadow-lg shadow-destructive/20
+      focus-visible:ring-destructive
     `,
   };
 

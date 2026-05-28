@@ -19,8 +19,8 @@ export interface ReaderNotePopupProps {
 export function ReaderNotePopup(props: ReaderNotePopupProps) {
   return (
 		<div
-			class='fixed z-50 min-w-60 rounded-lg border border-[var(--border)]
-       bg-[var(--background)]/40 backdrop-blur-lg shadow-xl p-2 flex flex-col gap-2 -translate-x-full'
+			class='fixed z-50 min-w-60 rounded-lg border border-border
+       bg-background/40 backdrop-blur-lg shadow-xl p-2 flex flex-col gap-2 -translate-x-full'
 			style={{
 				top: `${props.nodeEditing.position.y}px`,
 				left: `${props.nodeEditing.position.x}px`,
@@ -59,8 +59,8 @@ export function ReaderNotePopup(props: ReaderNotePopupProps) {
 				{/* Editable text */}
 				<textarea
 					ref={props.textareaRef}
-					class='flex-1 text-sm text-[var(--foreground)] bg-[var(--surface)]
-             outline-none rounded px-2 py-1 min-h-[64px] resize-none border border-[var(--border)]'
+					class='flex-1 text-sm text-foreground bg-secondary
+             outline-none rounded px-2 py-1 min-h-[64px] resize-none border border-border'
 					placeholder='Добавьте текст заметки...'
 					value={props.nodeEditing.text}
 					onInput={e => props.onTextChange(e.currentTarget.value ?? '')}

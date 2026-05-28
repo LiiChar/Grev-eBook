@@ -13,9 +13,10 @@ use sha2::{Digest, Sha256};
 use tauri_plugin_log::log;
 
 use anyhow::{Error, Result};
+use tokio::{time::Instant};
 use whatlang::detect;
 use std::{
-    collections::HashSet, path::{Path, PathBuf}
+    collections::HashSet, fs::{self, File}, path::{Path, PathBuf}, time::UNIX_EPOCH
 };
 use rayon::prelude::*;
 
@@ -27,7 +28,7 @@ pub trait BookSource {
             "Text decoding not supported for this format"
         ))
     }
-    fn generate_id(&self, title: String, path: &Path) -> String {
+    fn generate_id(&self, title: String) -> String {
         let mut hasher = Sha256::new();
 
         hasher.update(title.as_bytes());
@@ -67,6 +68,36 @@ pub trait BookSource {
             .unwrap_or("en");
 
         Ok(lang.to_string())
+    }
+
+    fn get_size(&self, path: &Path) -> Result<u64> {
+        let file = File::open(path)?;
+        let metadata = file.metadata()?;
+        Ok(metadata.len())
+    }
+
+    fn get_last_modified(&self, path: &Path) -> Result<u64> {
+        let metadata = fs::metadata(path)?;
+        Ok(metadata.modified()?.duration_since(UNIX_EPOCH)?.as_secs())
+    }
+
+    fn get_last_read_at(&self, path: &Path) -> Result<u64> {
+        let metadata = fs::metadata(path)?;
+        Ok(metadata.modified()?.duration_since(UNIX_EPOCH)?.as_secs())
+    }
+
+    fn get_created_at(&self, path: &Path) -> Result<u64> {
+        let metadata = fs::metadata(path)?;
+        Ok(metadata.created()?.duration_since(UNIX_EPOCH)?.as_secs())
+    }
+
+    fn get_chars_read(&self, chapters: &[Chapter]) -> Result<u64> {
+        let count = chapters
+            .iter()
+            .map(|c| c.html.chars().count() as u64)
+            .sum();
+        println!("chars_read: {}", chapters.len());
+        Ok(count)
     }
 }
 
@@ -112,12 +143,13 @@ pub fn get_books(path: &Path) -> Result<Vec<Book>, Error> {
 pub fn get_book(path: &Path, load_chapters: Option<bool>) -> Result<Book, Error> {
     for loader in available_sources() {
         if loader.can_load(path) {
-            log::info!("Load file by path {}", &path.display());
+            let now = Instant::now();
             match loader.load(path, load_chapters.unwrap_or(false)) {
                 Ok(mut book) => {
                     if book.meta.path.is_empty() {
                         book.meta.path = path.to_string_lossy().to_string();
                     }
+                    log::info!("Load file by path {}: {:?}", &path.display(), now.elapsed());
                     return Ok(book);
                 }
                 Err(err) => return Err(err),

@@ -35,7 +35,7 @@ export const AddMenu = (props: AddMenuProps) => {
 			<div class='lg:hidden'>
 				<button
 					type='button'
-					class='p-2 rounded-lg hover:bg-(--surface) transition-colors'
+					class='p-2 rounded-lg hover:bg-secondary transition-colors'
 					aria-label='Добавить'
 					onClick={() => setIsOpen(prev => !prev)}
 				>
@@ -43,7 +43,7 @@ export const AddMenu = (props: AddMenuProps) => {
 				</button>
 				<Show when={isOpen()}>
 					<div class='absolute right-0 top-full mt-2 z-20'>
-						<div class='flex flex-col gap-2 p-2 rounded-lg border border-(--border) bg-(--background)'>
+						<div class='flex flex-col gap-2 p-2 rounded-lg border border-border bg-background'>
 							<GlassButton onClick={props.onAddFile} size='sm'>
 								<Icon name='plus' size={16} />
 								Файл

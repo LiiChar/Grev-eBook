@@ -1,7 +1,8 @@
 // src/components/book/BookElement.tsx
-import { JSX, createSignal } from 'solid-js';
+import { JSX, createMemo, createSignal } from 'solid-js';
 import { BookWithoutChapters } from '../../shared/types/book';
 import { useNavigate } from '@solidjs/router';
+import { getCoverDataUrl } from '../../shared/utils/file';
 
 export type BookElementProps = {
 	book: BookWithoutChapters;
@@ -22,17 +23,7 @@ export const BookElement = (props: BookElementProps) => {
 
 	const [showActions, setShowActions] = createSignal(false);
 
-	const coverUrl = () => {
-		if (!book.meta.cover || book.meta.cover.length === 0) return null;
-		try {
-			const uint8Array = new Uint8Array(book.meta.cover);
-			const blob = new Blob([uint8Array], { type: 'image/jpeg' });
-			return URL.createObjectURL(blob);
-		} catch (e) {
-			console.error('Failed to create cover URL', e);
-			return null;
-		}
-	};
+	const coverUrl = createMemo(() => getCoverDataUrl(book.meta.cover));
 
 	return (
 		<div

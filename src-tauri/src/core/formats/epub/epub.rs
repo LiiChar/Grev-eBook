@@ -43,14 +43,26 @@ impl BookSource for EpubLoader {
         };
 
         let cover = cover_href
-            .and_then(|href| read_zip_bytes(&mut zip, &join_zip_path(&base_dir, &href)).ok());
+            .and_then(|href| {
+                let zip_path = join_zip_path(&base_dir, &href);
+                read_zip_bytes(&mut zip, &zip_path).ok().map(|bytes| bytes_to_data_url(&bytes, &href))
+            });
 
         let language = meta.language.clone().unwrap_or(self.get_language(&chapters.clone().unwrap_or(vec![])).unwrap_or("en".into()));
 
         Ok(Book {
-            id: self.generate_id(meta.title.clone(), path),
-            meta: BookMeta { cover, language: Some(language), ..meta },
-            chapters,
+            id: self.generate_id(meta.title.clone()),
+            meta: BookMeta { cover, language: Some(language),             
+                size: self.get_size(&path)?,
+                last_read_at: self.get_last_read_at(&path)?,
+                last_modified: self.get_last_modified(&path)?,
+                created_at: self.get_created_at(&path)?,
+                description: None,
+                chars_read: Some(self.get_chars_read(&chapters.clone().unwrap_or(vec![]))?),
+                progress_read: None,
+                ..meta
+            },
+            chapters, 
             position: None,
         })
     }
@@ -95,6 +107,25 @@ fn read_zip_bytes(zip: &mut ZipArchive<File>, path: &str) -> Result<Vec<u8>> {
     Ok(bytes)
 }
 
+fn bytes_to_data_url(bytes: &[u8], path: &str) -> String {
+    let mime = Path::new(path)
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| ext.to_lowercase())
+        .as_deref()
+        .map(|ext| match ext {
+            "png" => "image/png",
+            "jpg" | "jpeg" => "image/jpeg",
+            "webp" => "image/webp",
+            "gif" => "image/gif",
+            _ => "application/octet-stream",
+        })
+        .unwrap_or("application/octet-stream");
+
+    let encoded = general_purpose::STANDARD.encode(bytes);
+    format!("data:{};base64,{}", mime, encoded)
+}
+
 fn find_opf_path(container_xml: &str) -> Result<String> {
     let doc = Document::parse(container_xml)?;
     let rootfile = doc
@@ -113,15 +144,64 @@ fn base_dir_from_opf(opf_path: &str) -> String {
         .filter(|p| !p.is_empty())
         .unwrap_or_default()
 }
-
 fn parse_opf(
     opf_xml: &str,
     path: &Path,
 ) -> Result<(BookMeta, Vec<String>, Option<String>, Vec<String>)> {
     let doc = Document::parse(opf_xml)?;
-    let title = find_text(&doc, "title").unwrap_or_else(|| "Untitled".to_string());
+
+    let title = find_text(&doc, "title")
+        .unwrap_or_else(|| "Untitled".to_string());
+
     let author = find_text(&doc, "creator");
     let language = find_text(&doc, "language");
+
+    // Описание книги
+    let description = find_text(&doc, "description");
+
+    // Жанры
+    let genres = {
+        let items = doc
+            .descendants()
+            .filter(|n| {
+                n.is_element()
+                    && n.tag_name().name() == "subject"
+            })
+            .filter_map(|n| n.text())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(String::from)
+            .collect::<Vec<_>>();
+
+        if items.is_empty() {
+            None
+        } else {
+            Some(items)
+        }
+    };
+
+    // Серия книги (например calibre)
+    let series = doc
+        .descendants()
+        .find(|n| {
+            n.is_element()
+                && n.tag_name().name() == "meta"
+                && matches!(
+                    n.attribute("property"),
+                    Some("calibre:series") | Some("belongs-to-collection")
+                )
+        })
+        .and_then(|n| n.text())
+        .map(|s| s.trim().to_string());
+
+    let description = match (description, series) {
+        (Some(desc), Some(series)) => {
+            Some(format!("{}\n\nСерия: {}", desc, series))
+        }
+        (Some(desc), None) => Some(desc),
+        (None, Some(series)) => Some(format!("Серия: {}", series)),
+        _ => None,
+    };
 
     let mut manifest = HashMap::new();
     let mut cover_id = None;
@@ -138,15 +218,21 @@ fn parse_opf(
         let properties = item.attribute("properties").unwrap_or_default();
 
         if !id.is_empty() && !href.is_empty() {
-            manifest.insert(id.to_string(), href.to_string());
+            manifest.insert(
+                id.to_string(),
+                href.to_string(),
+            );
         }
 
         if properties.contains("cover-image") {
             cover_href = Some(href.to_string());
         }
 
-        // Собираем CSS файлы из manifest
-        if mime_type == "text/css" || href.to_lowercase().ends_with(".css") {
+        if mime_type == "text/css"
+            || href
+                .to_lowercase()
+                .ends_with(".css")
+        {
             css_files.push(href.to_string());
         }
     }
@@ -156,26 +242,31 @@ fn parse_opf(
         .filter(|n| n.is_element() && n.tag_name().name() == "meta")
     {
         if meta.attribute("name") == Some("cover") {
-            cover_id = meta.attribute("content").map(|s| s.to_string());
+            cover_id = meta
+                .attribute("content")
+                .map(|s| s.to_string());
         }
     }
 
-    // Сначала ищем через meta name="cover"
+    // cover через meta name="cover"
     if cover_href.is_none() {
         if let Some(id) = cover_id {
             cover_href = manifest.get(&id).cloned();
         }
     }
 
-    // Если не нашли, ищем изображение с cover в имени файла
+    // cover по имени файла
     if cover_href.is_none() {
-        for (_id, href) in &manifest {
-            let href_lower = href.to_lowercase();
-            if href_lower.contains("cover")
-                && (href_lower.ends_with(".jpg")
-                    || href_lower.ends_with(".jpeg")
-                    || href_lower.ends_with(".png")
-                    || href_lower.ends_with(".webp"))
+        for href in manifest.values() {
+            let lower = href.to_lowercase();
+
+            if lower.contains("cover")
+                && matches!(
+                    Path::new(&lower)
+                        .extension()
+                        .and_then(|e| e.to_str()),
+                    Some("jpg" | "jpeg" | "png" | "webp")
+                )
             {
                 cover_href = Some(href.clone());
                 break;
@@ -183,15 +274,17 @@ fn parse_opf(
         }
     }
 
-    // Если всё ещё не нашли, берём первое изображение
+    // fallback — первое изображение
     if cover_href.is_none() {
         for href in manifest.values() {
-            let href_lower = href.to_lowercase();
-            if href_lower.ends_with(".jpg")
-                || href_lower.ends_with(".jpeg")
-                || href_lower.ends_with(".png")
-                || href_lower.ends_with(".webp")
-            {
+            let lower = href.to_lowercase();
+
+            if matches!(
+                Path::new(&lower)
+                    .extension()
+                    .and_then(|e| e.to_str()),
+                Some("jpg" | "jpeg" | "png" | "webp")
+            ) {
                 cover_href = Some(href.clone());
                 break;
             }
@@ -199,9 +292,13 @@ fn parse_opf(
     }
 
     let mut spine = Vec::new();
+
     for itemref in doc
         .descendants()
-        .filter(|n| n.is_element() && n.tag_name().name() == "itemref")
+        .filter(|n| {
+            n.is_element()
+                && n.tag_name().name() == "itemref"
+        })
     {
         if let Some(idref) = itemref.attribute("idref") {
             if let Some(href) = manifest.get(idref) {
@@ -217,6 +314,16 @@ fn parse_opf(
             language,
             cover: None,
             path: path.to_string_lossy().to_string(),
+
+            description,
+            genres,
+
+            created_at: 0,
+            last_modified: 0,
+            last_read_at: 0,
+            size: 0,
+            chars_read: Some(0),
+            progress_read: None,
         },
         spine,
         cover_href,

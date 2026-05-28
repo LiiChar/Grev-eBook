@@ -1,4 +1,4 @@
-package com.litav.grev
+package com.litav.uni
 
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge

@@ -2,6 +2,7 @@ use std::{collections::HashMap, path::Path};
 
 use tauri::{AppHandle, Emitter};
 use tauri_plugin_store::StoreExt;
+use tokio::time::Instant;
 
 use crate::{
     core::{
@@ -103,6 +104,7 @@ pub async fn open_book(app: AppHandle, path: String) -> Result<Book, String> {
     Ok(loaded_book)
 }
 
+
 #[tauri::command]
 pub async fn add_books(app: AppHandle, path: &Path) -> Result<Vec<Book>, String> {
     log::log!(log::Level::Info, "Command - book: add_books");
@@ -162,23 +164,22 @@ pub async fn add_book(app: AppHandle, path: &Path) -> Result<Book, String> {
 
 #[tauri::command]
 pub async fn get_books(app: AppHandle) -> Result<Vec<Book>, String> {
-    log::log!(log::Level::Info, "Command - book: get_books");
+    let now = Instant::now();
 
     let store = app.store(STORE_PATH).map_err(|e| format!("Failed to open store: {}", e))?;
     let state = load_state(&store);
-    let session = state.reader.sessions.clone();
+    let session = state.reader.sessions;
 
     let books = state
         .book
         .books
-        .clone()
         .iter()
         .map(|b| {
             let position = session.get(&b.meta.path);
             Book {
                 id: b.id.clone(),
                 meta: b.meta.clone(),
-                chapters: b.chapters.clone(),
+                chapters: None,
                 position: match position {
                     Some(p) => Some(p.position.clone()),
                     None => None,
@@ -186,11 +187,10 @@ pub async fn get_books(app: AppHandle) -> Result<Vec<Book>, String> {
             }
         })
         .collect();
-
+    log::info!("Command - book: get_books - {:?}", now.elapsed());
     Ok(books)
 }
 
-#[allow(dead_code)]
 #[tauri::command]
 pub async fn get_books_version(app: AppHandle) -> Result<i64, String> {
     let store = app.store(STORE_PATH).map_err(|e| format!("Failed to open store: {}", e))?;

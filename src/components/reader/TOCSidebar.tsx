@@ -20,12 +20,12 @@ export const TOCSidebar = ({show, chapters, setShow, toChapter, class: className
 				ref={ref}
 				{...attr}
 				class={
-					'absolute left-1 top-13 rounded-lg bottom-2 w-64 z-20 backdrop-blur-lg bg-(--background)/40 border-r border-[var(--border)] animate-slide-in-left ' +
+					'absolute left-1 top-13 rounded-lg bottom-2 w-64 z-20 backdrop-blur-lg bg-background/40 border-r border-border animate-slide-in-left ' +
 					className
 				}
 			>
 				<div class='h-full flex flex-col'>
-					<div class='p-3 border-b border-(--border) flex items-center justify-between'>
+					<div class='p-3 border-b border-border flex items-center justify-between'>
 						<h2 class='font-semibold text-sm'>Содержание</h2>
 						<GlassButton
 							size='icon'
@@ -41,9 +41,9 @@ export const TOCSidebar = ({show, chapters, setShow, toChapter, class: className
 								<button
 									onClick={() => toChapter(index())}
 									class={`
-                          w-full text-left px-4 py-2 text-sm border-b border-[var(--border)]
-                          hover:bg-[var(--surface-hover)] transition-colors
-                          ${index() === reader.currentIndex ? 'bg-[var(--primary)]/10 text-[var(--primary)]' : ''}
+                          w-full text-left px-4 py-2 text-sm border-b border-border
+                          hover:bg-secondary-hover/60 transition-colors
+                          ${index() === reader.currentIndex ? 'bg-primary/10 text-primary' : ''}
                         `}
 								>
 									{chapter.title || `Глава ${chapter.order + 1}`}

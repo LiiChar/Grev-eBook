@@ -11,8 +11,16 @@ export type BookMeta = {
 	title: string;
 	author?: string;
 	language?: string;
-	cover?: number[]; 
+	cover?: string;
 	path: string;
+	size: number;
+	lastReadAt: number;
+	lastModified: number;
+	createdAt: number;
+	charsRead?: number;
+	progressRead?: number;
+	genres?: string[];
+	description?: string;
 }
 
 export type Chapter = {
