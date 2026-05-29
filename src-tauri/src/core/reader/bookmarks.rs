@@ -1,7 +1,8 @@
+use rayon::range;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::core::reader::ReadingPosition;
+use crate::core::reader::{ReadingPosition, TextRange};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
@@ -24,6 +25,7 @@ pub struct Bookmark {
     pub preview: String,
     pub kind: BookmarkKind,
     pub created_at: i64,
+    pub range: TextRange
 }
 
 impl Bookmark {
@@ -33,6 +35,7 @@ impl Bookmark {
         preview: String,
         kind: BookmarkKind,
         created_at: i64,
+        range: TextRange,
     ) -> Self {
         Self {
             id: Uuid::new_v4().to_string(),
@@ -41,6 +44,7 @@ impl Bookmark {
             preview,
             kind,
             created_at,
+            range
         }
     }
 }

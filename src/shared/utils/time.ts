@@ -1,3 +1,5 @@
+import { getRussianPlural } from "./date";
+
 type HourToken = 'hh' | 'h';
 type MinuteToken = 'mm' | 'm';
 type SecondToken = 'ss' | 's';
@@ -61,6 +63,50 @@ export const formattedTime = (
 	}
 
 	return result;
+};
+
+export const formattedTimeText = (
+	time: number,
+	format: 'ms' | 's' | 'm' = 's',
+): string => {
+	let totalMs = time;
+
+	if (format === 's') totalMs *= 1000;
+	if (format === 'm') totalMs *= 60_000;
+
+	const days = Math.floor(totalMs / 86_400_000);
+	const hours = Math.floor((totalMs % 86_400_000) / 3_600_000);
+	const minutes = Math.floor((totalMs % 3_600_000) / 60_000);
+	const seconds = Math.floor((totalMs % 60_000) / 1000);
+
+	const parts: string[] = [];
+
+	if (days > 0) {
+		parts.push(`${days} ${getRussianPlural(days, ['день', 'дня', 'дней'])}`);
+	}
+
+	if (hours > 0) {
+		parts.push(`${hours} ${getRussianPlural(hours, ['час', 'часа', 'часов'])}`);
+	}
+
+	if (minutes > 0) {
+		parts.push(
+			`${minutes} ${getRussianPlural(minutes, ['минута', 'минуты', 'минут'])}`,
+		);
+	}
+
+	if (seconds > 0) {
+		parts.push(
+			`${seconds} ${getRussianPlural(seconds, ['секунда', 'секунды', 'секунд'])}`,
+		);
+	}
+
+	if (!parts.length) {
+		return 'меньше секунды';
+	}
+
+	// Ограничиваем двумя крупнейшими единицами
+	return parts.slice(0, 2).join(' ');
 };
 
 type TimeUnit = 'ms' | 's' | 'm' | 'h';

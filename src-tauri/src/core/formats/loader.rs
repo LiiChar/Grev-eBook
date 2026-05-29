@@ -22,7 +22,7 @@ use rayon::prelude::*;
 
 pub trait BookSource {
     fn can_load(&self, path: &Path) -> bool;
-    fn load(&self, path: &Path, chapters: bool) -> Result<Book>;
+    fn load(&self, path: &Path, load_chapters: bool, return_chapters: bool) -> Result<Book>;
     fn decode_text(&self, _bytes: &[u8]) -> Result<String> {
         Err(anyhow::anyhow!(
             "Text decoding not supported for this format"
@@ -125,7 +125,7 @@ pub fn get_books(path: &Path) -> Result<Vec<Book>, Error> {
         .filter_map(|path| {
             log::debug!("Loading book {:?}", path);
 
-            match get_book(path, Some(false)) {
+            match get_book(path, Some(true), Some(false)) {
                 Ok(book) => Some(book),
                 Err(err) => {
                     log::warn!("Failed to load book {:?}: {}", path, err);
@@ -140,11 +140,11 @@ pub fn get_books(path: &Path) -> Result<Vec<Book>, Error> {
     Ok(books)
 }
 
-pub fn get_book(path: &Path, load_chapters: Option<bool>) -> Result<Book, Error> {
+pub fn get_book(path: &Path, load_chapters: Option<bool> , return_chapters: Option<bool>) -> Result<Book, Error> {
     for loader in available_sources() {
         if loader.can_load(path) {
             let now = Instant::now();
-            match loader.load(path, load_chapters.unwrap_or(false)) {
+            match loader.load(path, load_chapters.unwrap_or(false), return_chapters.unwrap_or(false)) {
                 Ok(mut book) => {
                     if book.meta.path.is_empty() {
                         book.meta.path = path.to_string_lossy().to_string();

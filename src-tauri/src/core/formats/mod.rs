@@ -1,6 +1,6 @@
 mod docx;
-mod epub;
-mod fb2;
+pub mod epub;
+pub mod fb2;
 mod html;
 mod loader;
 mod markdown;

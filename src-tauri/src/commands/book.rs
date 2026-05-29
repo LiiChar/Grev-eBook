@@ -6,6 +6,7 @@ use tokio::time::Instant;
 
 use crate::{
     core::{
+        book::cover::{self, bytes_to_data_url, save_cover},
         book::model::Book,
         formats::{get_book as gBook, get_books as gBooks},
         storage::{load_state, save_state, STORE_PATH},
@@ -74,7 +75,7 @@ pub async fn open_book(app: AppHandle, path: String) -> Result<Book, String> {
     }
 
     // Load book from disk (may be heavy)
-    let loaded_book = gBook(path, Some(true)).map_err(|e| format!("Failed to load book from path: {}", e))?;
+    let loaded_book = gBook(path, Some(true), Some(true)).map_err(|e| format!("Failed to load book from path: {}", e))?;
 
     // Update persisted state immediately
     let book_index = state
@@ -131,7 +132,7 @@ pub async fn add_book(app: AppHandle, path: &Path) -> Result<Book, String> {
     log::log!(log::Level::Info, "Command - book: add_book");
     let path = path.to_path_buf();
     let book = tauri::async_runtime::spawn_blocking(move || {
-        gBook(&path, Some(false)).map_err(|e| e.to_string())
+        gBook(&path, Some(false), Some(true)).map_err(|e| e.to_string())
     })
     .await
     .map_err(|e| format!("Task panicked: {}", e))??;
@@ -228,7 +229,7 @@ pub async fn get_book(app: AppHandle, path: String) -> Result<Book, String> {
             },
         })
     } else {
-        gBook(Path::new(&path), Some(false))
+        gBook(Path::new(&path), Some(false), Some(true))
             .map_err(|e| e.to_string())
             .ok()
             .map(|book| {
@@ -265,4 +266,51 @@ pub async fn clear_store(app: tauri::AppHandle) -> Result<(), String> {
     let _ = store.save();
     let _ = app.emit("books:changed", Some(ver));
     Ok(())
+}
+
+/// Get cover image as base64 data URL for a given book.
+/// Extracts cover from the book file and caches it.
+#[tauri::command]
+pub async fn get_cover_image(app: AppHandle, book_id: String, book_path: String) -> Result<String, String> {
+    log::log!(log::Level::Info, "Command - book: get_cover_image");
+
+    // First try to read from cache (covers directory)
+    let covers_dir = cover::get_covers_dir(&app)?;
+    let cache_prefix = covers_dir.join(&book_id);
+    
+    // Check for cached files
+    for ext in &["jpg", "png", "webp", "gif"] {
+        let cached_path = cache_prefix.with_extension(ext);
+        if cached_path.exists() {
+            let bytes = std::fs::read(&cached_path)
+                .map_err(|e| format!("Failed to read cached cover: {}", e))?;
+            return Ok(bytes_to_data_url(&bytes, ext));
+        }
+    }
+
+    // Not cached - extract from book file
+    let path = Path::new(&book_path);
+    let ext_str = path.extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_lowercase())
+        .unwrap_or_default();
+
+    let (bytes, ext) = match ext_str.as_str() {
+        "fb2" | "zip" => {
+            crate::core::formats::fb2::get_cover_bytes(&book_path)
+                .ok_or_else(|| "No cover found in FB2".to_string())?
+        }
+        "epub" => {
+            crate::core::formats::epub::get_cover_bytes(&book_path)
+                .ok_or_else(|| "No cover found in EPUB".to_string())?
+        }
+        _ => {
+            return Err("Cover extraction not supported for this format".to_string());
+        }
+    };
+
+    // Cache the cover
+    save_cover(&app, &book_id, &bytes, &ext)?;
+
+    Ok(bytes_to_data_url(&bytes, &ext))
 }

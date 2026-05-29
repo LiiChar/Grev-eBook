@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 // Types matching backend structs
 export type Theme = 'light' | 'dark' | 'sepia' | 'night';
 
-export type FontFamily = 'serif' | 'sans_serif' | 'monospace' | { custom: string };
+export type FontFamily = 'gentium' | 'lato' | 'literata';
 
 export type GeneralSettings = {
   theme: Theme;
@@ -12,13 +12,13 @@ export type GeneralSettings = {
 };
 
 export type ReaderSettings = {
-  font_family: FontFamily;
-  font_size: number;
-  line_height: number;
-  column_width: number;
-  mode: 'scroll' | 'chapters';
-  pdf_zoom: number;
-  pdf_zoom_lock: boolean;
+	reader_font: FontFamily;
+	font_size: number;
+	line_height: number;
+	column_width: number;
+	mode: 'scroll' | 'chapters';
+	pdf_zoom: number;
+	pdf_zoom_lock: boolean;
 };
 
 export type HotkeySettings = {
@@ -60,7 +60,7 @@ export function getDefaultSettings(): SettingStore {
       library_path: null,
     },
     reader: {
-      font_family: 'serif',
+      reader_font: 'literata',
       font_size: 18,
       line_height: 1.5,
       column_width: 720,

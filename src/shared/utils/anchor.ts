@@ -4,16 +4,22 @@ export function getReadingAnchor(
 	root: HTMLElement,
 	chapterId: string,
 	customSentence?: string,
-): ReadingPosition | null {
+): [ReadingPosition, number] | null {
 	const createWalker = () =>
 		document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
 			acceptNode(node) {
 				if (!node.textContent?.trim()) return NodeFilter.FILTER_REJECT;
-				if (node.parentElement?.tagName === 'MARK')
-					return NodeFilter.FILTER_REJECT;
+				if (node.parentElement?.tagName === 'MARK') return NodeFilter.FILTER_REJECT;
 				return NodeFilter.FILTER_ACCEPT;
 			},
 		});
+
+	// общий счётчик символов по главе
+	let acc = 0;
+
+	const countNode = (node: Text) => {
+		return (node.textContent || '').replace(/\s+/g, ' ').length;
+	};
 
 	// =====================================
 	// 1️⃣ ПРИОРИТЕТ: кастомное предложение
@@ -26,18 +32,27 @@ export function getReadingAnchor(
 			const text = node.textContent!.replace(/\s+/g, ' ');
 
 			const index = text.indexOf(customSentence);
+
 			if (index !== -1) {
+				const globalOffset = acc + index;
+
 				const start = Math.max(0, index - 40);
 				const end = Math.min(text.length, index + customSentence.length + 40);
 
-				return {
-					chapter_id: chapterId,
-					anchor_text: customSentence.slice(0, 80),
-					before: text.slice(start, index),
-					after: text.slice(index + customSentence.length, end),
-				};
+				return [
+					{
+						chapter_id: chapterId,
+						anchor_text: customSentence.slice(0, 80),
+						before: text.slice(start, index),
+						after: text.slice(index + customSentence.length, end),
+					},
+					globalOffset,
+				];
 			}
+
+			acc += countNode(node);
 		}
+		return null;
 	}
 
 	// =====================================
@@ -48,6 +63,7 @@ export function getReadingAnchor(
 
 	while (walker.nextNode()) {
 		const node = walker.currentNode as Text;
+
 		const range = document.createRange();
 		range.selectNodeContents(node);
 
@@ -57,13 +73,20 @@ export function getReadingAnchor(
 		if (nodeTop <= centerY && nodeTop + rect.height >= centerY) {
 			const text = node.textContent!.replace(/\s+/g, ' ').trim();
 
-			return {
-				chapter_id: chapterId,
-				anchor_text: text.slice(0, 80),
-				before: text.slice(0, 40),
-				after: text.slice(40, 80),
-			};
+			const globalOffset = acc;
+
+			return [
+				{
+					chapter_id: chapterId,
+					anchor_text: text.slice(0, 80),
+					before: text.slice(0, 40),
+					after: text.slice(40, 80),
+				},
+				globalOffset,
+			];
 		}
+
+		acc += countNode(node);
 	}
 
 	return null;

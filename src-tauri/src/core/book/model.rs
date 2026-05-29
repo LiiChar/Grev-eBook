@@ -16,7 +16,7 @@ pub struct BookMeta {
     pub description: Option<String>,
     pub author: Option<String>,
     pub language: Option<String>,
-    pub cover: Option<String>,
+    pub cover_path: Option<String>,
     pub path: String,
     pub size: u64,
     pub last_read_at: u64,
@@ -25,6 +25,7 @@ pub struct BookMeta {
     pub progress_read: Option<f32>,
     pub chars_read: Option<u64>,
     pub genres: Option<Vec<String>>,
+    pub count_chapters: i64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

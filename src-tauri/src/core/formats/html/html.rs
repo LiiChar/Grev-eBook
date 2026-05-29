@@ -19,7 +19,7 @@ impl BookSource for HtmlLoader {
             .unwrap_or(false)
     }
 
-    fn load(&self, path: &Path, _with_chapters: bool) -> Result<Book> {
+    fn load(&self, path: &Path, load_chapters: bool, return_chapters: bool) -> Result<Book> {
         let bytes = fs::read(path)?;
         let html = self.decode_text(&bytes)?;
         let title = path
@@ -41,7 +41,7 @@ impl BookSource for HtmlLoader {
                 title,
                 author: None,
                 language: Some(self.get_language(&vec![chapter.clone()]).unwrap_or("en".into())),
-                cover: None,
+                cover_path: None,
                 path: path.to_string_lossy().to_string(),
                 size: self.get_size(&path)?,
                 last_read_at: self.get_last_read_at(&path)?,
@@ -51,8 +51,12 @@ impl BookSource for HtmlLoader {
                 chars_read: Some(self.get_chars_read(&vec![chapter.clone()])?),
                 progress_read: None,
                 genres: None,
+                count_chapters: 1,
             },
-            chapters: Some(vec![chapter]),
+            chapters: match return_chapters {
+                true => Some(vec![chapter]),
+                false => None,
+            },
             position: None,
         })
     }

@@ -1,8 +1,8 @@
 // src/components/book/BookElement.tsx
-import { JSX, createMemo, createSignal } from 'solid-js';
+import { JSX, createSignal } from 'solid-js';
 import { BookWithoutChapters } from '../../shared/types/book';
 import { useNavigate } from '@solidjs/router';
-import { getCoverDataUrl } from '../../shared/utils/file';
+import { CoverImage } from '../../shared/ui/CoverImage';
 
 export type BookElementProps = {
 	book: BookWithoutChapters;
@@ -23,8 +23,6 @@ export const BookElement = (props: BookElementProps) => {
 
 	const [showActions, setShowActions] = createSignal(false);
 
-	const coverUrl = createMemo(() => getCoverDataUrl(book.meta.cover));
-
 	return (
 		<div
 			{...rest}
@@ -38,16 +36,14 @@ export const BookElement = (props: BookElementProps) => {
 			style={style}
 		>
 			<figure class=' w-full h-full z-1 absolute top-0 left-0 flex items-center justify-center'>
-				{coverUrl() ? (
-					<img
-						src={coverUrl()!}
-						alt={book.meta.title || 'Обложка книги'}
-						class='object-cover w-full h-full'
-						loading='lazy'
-					/>
-				) : (
+				<CoverImage
+					bookId={book.id}
+					bookPath={book.meta.path}
+					alt={book.meta.title || 'Обложка книги'}
+					class='object-cover w-full h-full'
+				>
 					<div class='text-gray-400 text-sm'>Нет обложки</div>
-				)}
+				</CoverImage>
 			</figure>
 			<div></div>
 

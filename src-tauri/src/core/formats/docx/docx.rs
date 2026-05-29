@@ -31,7 +31,7 @@ impl BookSource for DocxLoader {
             .unwrap_or(false)
     }
 
-    fn load(&self, path: &Path, with_chapters: bool) -> Result<Book> {
+    fn load(&self, path: &Path, with_chapters: bool, return_chapters: bool) -> Result<Book> {
         // Парсинг с docx-rust
         let docx_file = DocxFile::from_file(path)?;
         let docx = docx_file.parse()?;
@@ -67,7 +67,7 @@ impl BookSource for DocxLoader {
             title,
             author,
             language: Some(self.get_language(&chapters.clone().unwrap_or(vec![])).unwrap_or("en".into())),
-            cover: None,
+            cover_path: None,
             path: path.to_string_lossy().into_owned(),
             size: self.get_size(&path).unwrap_or(0),
             last_read_at: self.get_last_read_at(&path).unwrap_or(0),
@@ -77,12 +77,16 @@ impl BookSource for DocxLoader {
             chars_read: Some(self.get_chars_read(&chapters.clone().unwrap_or(vec![]))?),
             progress_read: None,
             genres: None,
+            count_chapters: chapters.clone().unwrap_or(vec![]).len() as i64,
         };
 
         Ok(Book {
             id: self.generate_id(meta.title.clone()),
             meta,
-            chapters,
+            chapters: match return_chapters {
+                true => chapters,
+                false => None,
+            },
             position: None,
         })
     }

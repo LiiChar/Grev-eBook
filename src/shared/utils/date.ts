@@ -94,12 +94,23 @@ export const getMonthDayFromDayOfYear = (year: number, dayOfYear: number) => {
 	return [month, day];
 };
 export const getTimeAgo = (date: Date | string | number) => {
-	const now = new Date();
-	const messageTime = new Date(date);
+	const now = Date.now();
 
-	const timeDifference = now.getTime() - messageTime.getTime();
-	const seconds = Math.floor(timeDifference / 1000);
-	const minutes = Math.floor(seconds / 60) + new Date().getTimezoneOffset();
+	let timestamp: number;
+
+	if (date instanceof Date) {
+		timestamp = date.getTime();
+	} else if (typeof date === 'number') {
+		// unix timestamp в секундах → переводим в ms
+		timestamp = date < 1e12 ? date * 1000 : date;
+	} else {
+		timestamp = new Date(date).getTime();
+	}
+
+	const diff = now - timestamp;
+
+	const seconds = Math.floor(diff / 1000);
+	const minutes = Math.floor(seconds / 60);
 	const hours = Math.floor(minutes / 60);
 	const days = Math.floor(hours / 24);
 	const months = Math.floor(days / 30);
@@ -107,35 +118,33 @@ export const getTimeAgo = (date: Date | string | number) => {
 
 	if (years > 0) {
 		return `${years} ${getRussianPlural(years, ['год', 'года', 'лет'])} назад`;
-	} else if (months > 0) {
-		return `${months} ${getRussianPlural(months, [
-			'месяц',
-			'месяца',
-			'месяцев',
-		])} назад`;
-	} else if (days > 7) {
-		const weeks = Math.floor(days / 7);
-		return `${weeks} ${getRussianPlural(weeks, [
-			'неделю',
-			'недели',
-			'недель',
-		])} назад`;
-	} else if (days > 0) {
-		return `${days} ${getRussianPlural(days, ['день', 'дня', 'дней'])} назад`;
-	} else if (hours > 0) {
-		return `${hours} ${getRussianPlural(hours, ['час', 'часа', 'часов'])} назад`;
-	} else if (minutes > 0) {
-		return `${minutes} ${getRussianPlural(minutes, [
-			'минуту',
-			'минуты',
-			'минут',
-		])} назад`;
-	} else {
-		return 'меньше минуты назад';
 	}
+
+	if (months > 0) {
+		return `${months} ${getRussianPlural(months, ['месяц', 'месяца', 'месяцев'])} назад`;
+	}
+
+	if (days >= 7) {
+		const weeks = Math.floor(days / 7);
+		return `${weeks} ${getRussianPlural(weeks, ['неделю', 'недели', 'недель'])} назад`;
+	}
+
+	if (days > 0) {
+		return `${days} ${getRussianPlural(days, ['день', 'дня', 'дней'])} назад`;
+	}
+
+	if (hours > 0) {
+		return `${hours} ${getRussianPlural(hours, ['час', 'часа', 'часов'])} назад`;
+	}
+
+	if (minutes > 0) {
+		return `${minutes} ${getRussianPlural(minutes, ['минуту', 'минуты', 'минут'])} назад`;
+	}
+
+	return 'меньше минуты назад';
 };
 
-function getRussianPlural(number: number, titles: [string, string, string]) {
+export function getRussianPlural(number: number, titles: [string, string, string]) {
 	const cases = [2, 0, 1, 1, 1, 2];
 	return titles[
 		number % 100 > 4 && number % 100 < 20

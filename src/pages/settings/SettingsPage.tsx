@@ -9,8 +9,7 @@ import {
   setAnimations,
   setDistractionFree,
   setReaderMode,
-  setPdfZoom,
-  setPdfZoomLock,
+	setReaderFont,
 } from '../../shared/stores/settingsStore';
 import { GlassPanel } from '../../shared/ui/GlassPanel';
 import { GlassButton } from '../../shared/ui/GlassButton';
@@ -22,6 +21,8 @@ import { clearStore } from '@/shared/api/book';
 import Button from '@/shared/ui/Button';
 import { toast } from 'solid-sonner';
 import { resetDefaultReader } from '@/shared/stores/readerStore';
+import { Select } from '@/shared/ui/Select';
+import { FontFamily } from '@/shared/api/settings';
 
 type SettingsSection = 'general' | 'reader' | 'ui' | 'hotkeys';
 
@@ -338,6 +339,19 @@ export function ReaderSettings ({variant = 'default'}: {variant?: 'default' | 'm
 					</button>
 				</div>
 			</SettingRow>
+
+			<SettingRow variant={variant} label='Шрифт' orientation='vertical'>
+				<Select
+					options={[
+						{ label: 'Gentium', value: 'gentium' },
+						{ label: 'Lato', value: 'lato' },
+						{ label: 'Literata', value: 'literata' },
+					]}
+					value={settings.reader.reader_font}
+					onChange={value => setReaderFont(value as FontFamily)}
+				/>
+			</SettingRow>
+
 			{/* Font size */}
 			<SettingRow
 				variant={variant}
@@ -510,22 +524,27 @@ function SettingRow(props: {
 	label: string;
 	description?: string;
 	children: any;
+	orientation?: 'vertical' | 'horizontal';
 	variant?: 'default' | 'minimal';
 }) {
+	let orientation = props.orientation ?? 'vertical';
+	let cl =
+		orientation === 'vertical'
+			? 'flex flex-col '
+			: 'flex items-center justify-between';
+
 	return (
 		<div
 			class={
 				props.variant === 'minimal'
-					? 'flex items-center justify-between gap-0 py-2 px-2 flex-wrap'
-					: 'flex items-center justify-between gap-4 px-4 py-3 flex-wrap'
+					? 'gap-0 py-2 px-2 flex-wrap ' + cl
+					: 'justify-between gap-4 px-4 py-3 flex-wrap ' + cl
 			}
 		>
 			<div class='flex-1 relative z-1 flex-col'>
 				<p class='font-medium text-sm'>{props.label}</p>
 				<Show when={props.description}>
-					<p class='text-xs text-muted-foreground mt-0.5'>
-						{props.description}
-					</p>
+					<p class='text-xs text-muted-foreground mt-0.5'>{props.description}</p>
 				</Show>
 			</div>
 			{props.children}

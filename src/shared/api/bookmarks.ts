@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { ReadingPosition } from './reader';
+import { TextRange } from '../types/note';
 
 // Types matching backend structs
 export type BookmarkKind = 'regular' | 'custom';
@@ -11,16 +12,18 @@ export type Bookmark = {
   preview: string;
   kind: BookmarkKind;
   created_at: number;
+  range: TextRange;
 };
 
 // API functions
 export async function addBookmark(
-  bookPath: string,
-  position: ReadingPosition,
-  preview: string,
-  kind: BookmarkKind = 'regular'
+	bookPath: string,
+	position: ReadingPosition,
+	range: TextRange,
+	preview: string,
+	kind: BookmarkKind = 'regular',
 ): Promise<Bookmark> {
-  return invoke<Bookmark>('add_bookmark', { bookPath, position, preview, kind });
+	return invoke<Bookmark>('add_bookmark', { bookPath, position, range, preview, kind });
 }
 
 export async function getBookmarks(bookPath?: string): Promise<Bookmark[]> {

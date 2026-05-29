@@ -37,7 +37,7 @@ export function ReaderPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const { book, isLoading, notes, loadBook, position } = useBookLoader();
+  const { book, isLoading, notes, loadBook, position, bookmarks } = useBookLoader();
 
   const { savePosition, debouncedSavePosition } = useReadingPosition();
 
@@ -50,7 +50,7 @@ export function ReaderPage() {
     updateNotes,
   } = useNotesManager();
 
-  const { handleAddBookmark, scrollToBookmark } = useBookmarksManager();
+  const { handleAddBookmark,updateBookmarks, scrollToBookmark } = useBookmarksManager();
 
   const { showControls, setupAutoHide } = useAutoHideControls();
 
@@ -137,12 +137,14 @@ export function ReaderPage() {
         return;
       }
       const currentNotes = notes();
+      const currentBookmarks = bookmarks();
 			const currentBook = book();
 			const el = contentRef;
 
 			if (!currentBook || !el) return;
 
 			updateNotes(currentNotes, el);
+			updateBookmarks(currentBookmarks, el);
 
 			if (!position()) return;
 
@@ -312,7 +314,7 @@ export function ReaderPage() {
 						/>
 					</div>
 
-					<Show when={settings.reader.mode === 'chapters' && showControls()}>
+					<Show when={showControls()}>
 						<ReaderFooter
 							currentIndex={reader.currentIndex}
 							totalChapters={sortedChapters().length}

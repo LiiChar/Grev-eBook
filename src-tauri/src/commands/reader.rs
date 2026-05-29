@@ -2,13 +2,12 @@ use tauri::AppHandle;
 use tauri_plugin_store::StoreExt;
 
 use crate::{
-    core::{
+    commands::reader, core::{
         reader::{
             Bookmark, BookmarkKind, Note, ReaderMode, ReadingPosition, ReadingSession, TextRange,
         },
-        storage::{load_state, save_state, STORE_PATH},
-    },
-    state::{ReaderState, SettingStore},
+        storage::{STORE_PATH, load_state, save_state},
+    }, state::{ReaderState, SettingStore}
 };
 
 /// ---------- reader ----------
@@ -50,10 +49,13 @@ pub async fn save_reading_position(
     app: AppHandle,
     book_path: String,
     position: ReadingPosition,
+    chars: u64,
     mode: ReaderMode,
-) -> Result<ReaderState, String> {
-    log::log!(log::Level::Info, "Command - reader: save_reading_position");
+) -> Result<(ReaderState, u64), String> {
+    log::info!("Command - reader: save_reading_position");
+
     let now = now_ts();
+
     let store = app.store(STORE_PATH).map_err(|e| e.to_string())?;
     let mut state = load_state(&store);
 
@@ -61,15 +63,47 @@ pub async fn save_reading_position(
         .reader
         .sessions
         .entry(book_path.clone())
-        .and_modify(|s| {
-            s.position = position.clone();
-            s.mode = mode.clone();
-            s.last_read_at = now;
+        .and_modify(|session| {
+            session.position = position.clone();
+            session.mode = mode.clone();
+            session.last_read_at = now;
         })
-        .or_insert_with(|| ReadingSession::new(book_path, position, mode, now));
+        .or_insert_with(|| {
+            ReadingSession::new(book_path.clone(), position.clone(), mode.clone(), now)
+        });
+
+    let mut chars_read_cone = 0;
+
+    if let Some(book) = state
+        .book
+        .books
+        .iter_mut()
+        .find(|b| b.meta.path == book_path)
+    {
+        book.meta.last_read_at = now as u64;
+
+        if let (Some(chapters), Some(current_chapter_id)) =
+            (&book.chapters, position.chapter_id.as_ref())
+        {
+            let mut chars_read = 0u64;
+
+            for chapter in chapters {
+                if chapter.id == *current_chapter_id {
+                    chars_read += chars as u64;
+                    break;
+                }
+
+                chars_read += chapter.html.chars().count() as u64;
+            }
+
+            chars_read_cone = chars_read;
+            book.meta.progress_read = Some(chars_read as f32);
+        }
+    }
 
     save_state(&store, &state).map_err(|e| e.to_string())?;
-    Ok(state.reader)
+
+    Ok((state.reader, chars_read_cone))
 }
 
 #[tauri::command]
@@ -92,6 +126,7 @@ pub async fn get_reading_position(app: AppHandle, book_path: String) -> Result<R
 pub async fn add_bookmark(
     app: AppHandle,
     book_path: String,
+    range: TextRange,
     position: ReadingPosition,
     preview: String,
     kind: BookmarkKind,
@@ -101,7 +136,7 @@ pub async fn add_bookmark(
     let store = app.store(STORE_PATH).map_err(|e| e.to_string())?;
     let mut state = load_state(&store);
 
-    let bookmark = Bookmark::new(book_path, position, preview, kind, now);
+    let bookmark = Bookmark::new(book_path, position, preview, kind, now, range);
     state.bookmarks.items.push(bookmark.clone());
     save_state(&store, &state).map_err(|e| e.to_string())?;
     Ok(bookmark)

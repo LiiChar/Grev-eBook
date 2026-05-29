@@ -3,7 +3,7 @@ import { createSignal, onMount, Show, createMemo, batch } from 'solid-js';
 import { BookPageParams } from '../../shared/types/router';
 import { Book as BookType } from '../../shared/types/book';
 import { openBook } from '../../shared/api/book';
-import { getCoverDataUrl } from '../../shared/utils/file';
+import { CoverImage } from '../../shared/ui/CoverImage';
 import { toast } from 'solid-sonner';
 
 export const Book = () => {
@@ -39,8 +39,6 @@ export const Book = () => {
 		}
 	});
 
-	const coverUrl = createMemo(() => getCoverDataUrl(book()?.meta.cover));
-
 	const handleSaveNotes = () => {
 		localStorage.setItem(`book:${id}:notes`, notes());
 		toast.success('Заметки сохранены');
@@ -69,18 +67,18 @@ export const Book = () => {
 					{/* Обложка */}
 					<div class='md:col-span-1 max-h-screen flex items-center justify-center'>
 						<div class='bg-base-200 h-full rounded-2xl overflow-hidden shadow-xl aspect-10/16 flex items-center justify-center border border-base-300'>
-							{coverUrl() ? (
-								<img
-									src={coverUrl()!}
+							<Show when={book()?.id && book()?.meta?.path}>
+								<CoverImage
+									bookId={book()!.id}
+									bookPath={book()!.meta.path}
 									alt={book()!.meta.title}
 									class='w-full h-full object-cover'
-									loading='lazy'
-								/>
-							) : (
-								<div class='text-gray-500 text-center p-6 text-lg font-medium'>
-									Нет обложки
-								</div>
-							)}
+								>
+									<div class='text-gray-500 text-center p-6 text-lg font-medium'>
+										Нет обложки
+									</div>
+								</CoverImage>
+							</Show>
 						</div>
 					</div>
 

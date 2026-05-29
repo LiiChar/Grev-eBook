@@ -1,6 +1,7 @@
 use std::{collections::HashMap, fs, io::Read, path::Path};
 
 use anyhow::{bail, Result};
+use base64::{Engine, engine::general_purpose};
 use encoding_rs::Encoding;
 use roxmltree::Document;
 use uuid::Uuid;
@@ -22,7 +23,7 @@ impl BookSource for Fb2Loader {
             .unwrap_or(false)
     }
 
-    fn load(&self, path: &Path, with_chapters: bool) -> Result<Book> {
+    fn load(&self, path: &Path, load_chapters: bool, return_chapters: bool) -> Result<Book> {
         let bytes = if path
             .extension()
             .and_then(|e| e.to_str())
@@ -46,10 +47,10 @@ impl BookSource for Fb2Loader {
         // Собираем все изображения из <binary> элементов
         let images = extract_images(&doc);
         
-        // Находим обложку
-        let cover = extract_cover(&doc, &images);
+        // Находим обложку (for chapter images only, not stored in meta)
+        let _cover = extract_cover(&doc, &images);
         
-        let chapters = if with_chapters {
+        let chapters = if load_chapters {
             extract_sections(&doc, &images)
         } else {
             None
@@ -57,13 +58,15 @@ impl BookSource for Fb2Loader {
 
         let language = find_text(&doc, "lang").unwrap_or(self.get_language(&chapters.clone().unwrap_or(vec![])).unwrap_or("en".into()));
 
+        println!("Count chapters: {}", chapters.clone().unwrap_or(vec![]).len());
+
         Ok(Book {
             id: self.generate_id(title.clone()),
             meta: BookMeta {
                 title,
                 author,
                 language: Some(language),
-                cover,
+                cover_path: None,
                 path: path.to_string_lossy().to_string(),
                 size: self.get_size(&path)?,
                 last_read_at: self.get_last_read_at(&path)?,
@@ -72,9 +75,13 @@ impl BookSource for Fb2Loader {
                 description: annotation,
                 chars_read: Some(self.get_chars_read(&chapters.clone().unwrap_or(vec![]))?),
                 progress_read: None,
-                genres: genres
+                genres: genres,
+                count_chapters: chapters.clone().unwrap_or(vec![]).len() as i64,
             },
-            chapters,
+            chapters: match return_chapters {
+                true => chapters,
+                false => None,
+            },
             position: None,
         })
     }
@@ -244,6 +251,76 @@ fn extract_cover(doc: &Document<'_>, images: &HashMap<String, String>) -> Option
     let image_id = href.trim_start_matches('#');
 
     images.get(image_id).cloned()
+}
+
+const XLINK_NS: &str = "http://www.w3.org/1999/xlink";
+
+/// Get cover raw bytes from FB2 (data: URI -> raw bytes)
+pub fn get_cover_bytes(path: &str) -> Option<(Vec<u8>, String)> {
+    let path = Path::new(path);
+
+    let bytes = if path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.eq_ignore_ascii_case("zip"))
+        .unwrap_or(false)
+    {
+        read_fb2_from_zip(path).ok()?
+    } else {
+        fs::read(path).ok()?
+    };
+
+    let xml = decode_xml(&bytes).ok()?;
+    let doc = Document::parse(&xml).ok()?;
+
+    let coverpage = doc
+        .descendants()
+        .find(|n| n.has_tag_name("coverpage"))?;
+
+    let image = coverpage
+        .descendants()
+        .find(|n| n.has_tag_name("image"))?;
+
+    // xlink:href="#image.jpg"
+    let href = image
+        .attribute((XLINK_NS, "href"))
+        .or_else(|| image.attribute("href"))
+        .or_else(|| image.attribute("l:href"))?
+        .trim_start_matches('#');
+
+    let binary = doc
+        .descendants()
+        .find(|n| {
+            n.has_tag_name("binary")
+                && n.attribute("id")
+                    .map(|id| id == href)
+                    .unwrap_or(false)
+        })?;
+
+    let mime = binary
+        .attribute("content-type")
+        .unwrap_or("image/jpeg");
+
+    let base64_data = binary
+        .text()?
+        .replace('\n', "")
+        .replace('\r', "")
+        .replace(' ', "");
+
+    let decoded = general_purpose::STANDARD
+        .decode(base64_data.as_bytes())
+        .ok()?;
+
+    let ext = match mime {
+        "image/png" => "png",
+        "image/jpeg" => "jpg",
+        "image/jpg" => "jpg",
+        "image/webp" => "webp",
+        "image/gif" => "gif",
+        _ => "jpg",
+    };
+
+    Some((decoded, ext.to_string()))
 }
 
 /// Преобразует FB2 элемент в HTML

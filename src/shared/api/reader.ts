@@ -35,10 +35,11 @@ export async function setCurrentBook(bookPath: string): Promise<ReaderState> {
 
 export async function saveReadingPosition(
   bookPath: string,
+  chars: number,
   position: ReadingPosition,
   mode: ReaderMode
-): Promise<void> {
-  return invoke('save_reading_position', { bookPath, position, mode });
+) {
+  return invoke<[ReaderState, number]>('save_reading_position', { bookPath, chars, position, mode });
 }
 
 export async function getReadingPosition(

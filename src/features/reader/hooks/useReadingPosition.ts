@@ -1,23 +1,16 @@
-
 import { getReadingAnchor } from '../../../shared/utils/anchor';
 import { saveReadingPosition } from '../../../shared/api/reader';
-import { debounce } from '../../../shared/utils/common';
-import type { ReaderMode } from '../../../shared/api/reader';
+import type { ReaderMode, ReaderState } from '../../../shared/api/reader';
+import { reader, setReader, updateBook } from '@/shared/stores/readerStore';
 
 export interface UseReadingPositionReturn {
-	savePosition: (options: {
-		contentEl: HTMLDivElement;
-		chapterId: string;
-		bookPath: string;
-		mode: ReaderMode;
-	}) => Promise<void>;
+	savePosition: (
+		options: SaveOptions,
+	) => Promise<[ReaderState, number] | undefined>;
 
-	debouncedSavePosition: (options: {
-		contentEl: HTMLDivElement;
-		chapterId: string;
-		bookPath: string;
-		mode: ReaderMode;
-	}) => void;
+	debouncedSavePosition: (
+		options: SaveOptions,
+	) => Promise<[ReaderState, number] | undefined>;
 }
 
 type SaveOptions = {
@@ -28,29 +21,59 @@ type SaveOptions = {
 };
 
 export function useReadingPosition(): UseReadingPositionReturn {
+	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+	let saveRequestId = 0;
+
 	async function savePosition({
 		contentEl,
 		chapterId,
 		bookPath,
 		mode,
-	}: SaveOptions): Promise<void> {
-		const position = getReadingAnchor(contentEl, chapterId);
-		if (!position) return;
+	}: SaveOptions): Promise<[ReaderState, number] | undefined> {
+		const anchor = getReadingAnchor(contentEl, chapterId);
+		if (!anchor) return;
+
+		const [position, globalOffset] = anchor;
+
+		const requestId = ++saveRequestId;
 
 		try {
-			await saveReadingPosition(bookPath, position, mode);
+			const result = await saveReadingPosition(bookPath, globalOffset, position, mode);
+
+			let book = reader.books.find(b => b.meta.path === bookPath);
+			if (book) {
+				updateBook({
+					...book,
+					meta: {
+						...book.meta,
+						progress_read: result[1],
+					}
+				});
+			}
+
+
+			// Игнорируем устаревший ответ
+			if (requestId !== saveRequestId) return;
+
+			return result;
 		} catch (err) {
 			console.error('Failed to save position:', err);
 		}
 	}
 
-	/**
-	 * Один debounce на все сохранения:
-	 * scroll / смена главы / ручной вызов
-	 */
-	const debouncedSavePosition = debounce((options: SaveOptions) => {
-		savePosition(options);
-	}, 500);
+	function debouncedSavePosition(
+		options: SaveOptions,
+	): Promise<[ReaderState, number] | undefined> {
+		if (debounceTimer) {
+			clearTimeout(debounceTimer);
+		}
+
+		return new Promise(resolve => {
+			debounceTimer = setTimeout(async () => {
+				resolve(await savePosition(options));
+			}, 500);
+		});
+	}
 
 	return {
 		savePosition,
@@ -58,20 +81,14 @@ export function useReadingPosition(): UseReadingPositionReturn {
 	};
 }
 
-/**
- * debounce handler для onScroll
- */
 export function createScrollSaveHandler(
 	getContentEl: () => HTMLDivElement | undefined,
 	getChapterId: () => string,
 	getBookPath: () => string,
 	getMode: () => ReaderMode,
-	debouncedSavePosition: (options: {
-		contentEl: HTMLDivElement;
-		chapterId: string;
-		bookPath: string;
-		mode: ReaderMode;
-	}) => void,
+	debouncedSavePosition: (
+		options: SaveOptions,
+	) => Promise<[ReaderState, number] | undefined>,
 ): () => void {
 	return () => {
 		const contentEl = getContentEl();
@@ -80,7 +97,7 @@ export function createScrollSaveHandler(
 
 		if (!contentEl || !chapterId || !bookPath) return;
 
-		debouncedSavePosition({
+		void debouncedSavePosition({
 			contentEl,
 			chapterId,
 			bookPath,

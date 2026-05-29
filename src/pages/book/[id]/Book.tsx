@@ -7,7 +7,8 @@ import { GlassPanel } from "../../../shared/ui/GlassPanel";
 import { GlassButton } from "../../../shared/ui/GlassButton";
 import { Icon } from "../../../shared/ui/Icon";
 import type { Book, Chapter } from "../../../shared/types/book";
-import { getCoverDataUrl, getFileExtension } from "../../../shared/utils/file";
+import { CoverImage } from "../../../shared/ui/CoverImage";
+import { getFileExtension } from "../../../shared/utils/file";
 import { BookLoader } from "../../../shared/ui/Loader";
 import { ensureBooksLoaded, reader, setReader, updateBook } from "../../../shared/stores/readerStore";
 import { MobilePadding } from "@/widgets/layout/MobilePadding";
@@ -15,7 +16,7 @@ import * as htmlToImage from 'html-to-image';
 import { htmlStringToBase64 } from "@/shared/utils/html";
 import { getTimeAgo } from "@/shared/utils/date";
 import { formatFileSize, timeRead } from "@/shared/utils/text";
-import { formattedTime } from "@/shared/utils/time";
+import { formattedTime, formattedTimeText } from "@/shared/utils/time";
 
 export function BookDetailPage() {
   const params = useParams<{ id: string }>();
@@ -53,17 +54,6 @@ const libraryBook =
 		}
 
 		if ((libraryBook.chapters ?? []).length > 0) {
-			if (!libraryBook.meta.cover) {
-				console.log('no cover, trying to generate from first chapter');
-				let cBook = {...libraryBook};
-				updateBook({
-					...cBook,
-					meta: {
-						...cBook.meta,
-						cover: await htmlStringToBase64(cBook.chapters[0].html),
-					}
-				});
-			}
       setBook(libraryBook);
 			const bms = await getBookmarks(libraryBook.meta.path);
 			setBookmarks(bms);
@@ -71,10 +61,6 @@ const libraryBook =
     }
 
 		let data = await openBook(libraryBook.meta.path);
-		if (!data.meta.cover) {
-			console.log('no cover, trying to generate from first chapter');
-			data.meta.cover = await htmlStringToBase64(data.chapters[0].html);
-		}
 		setBook(data);
 
 		setReader('books', (prev) => {
@@ -127,6 +113,7 @@ const libraryBook =
 		toast.success('Путь скопирован');
 	}
 
+
   return (
 			<div class='h-full overflow-y-auto'>
 				{/* Loading state */}
@@ -148,10 +135,14 @@ const libraryBook =
 						<div class='grid mt-6 grid-cols-1 md:grid-cols-3 gap-8 pl-6 pr-6'>
 							{/* Cover */}
 							<div class='md:col-span-1'>
-								<div class=' overflow-hidden max-h-[50vh] h-full w-full flex justify-center items-center'>
-									<Show
-										when={book()?.meta.cover}
-										fallback={
+								<div class='overflow-hidden max-h-[50vh] h-full w-full flex justify-center items-center'>
+									<Show when={book()?.id && book()?.meta?.path}>
+										<CoverImage
+											bookId={book()!.id}
+											bookPath={book()!.meta.path}
+											alt={book()!.meta.title}
+											class='h-full object-cover aspect-2/3 overflow-hidden rounded-lg'
+										>
 											<div class='w-full h-full flex items-center justify-center rounded-lg bg-secondary/60'>
 												<div class='text-center p-6'>
 													<Icon
@@ -162,16 +153,30 @@ const libraryBook =
 													<p class='text-sm text-muted-foreground'>Нет обложки</p>
 												</div>
 											</div>
-										}
-									>
-										<img
-											loading='lazy'
-											src={book()?.meta.cover!}
-											alt={book()!.meta.title}
-											class=' h-full object-cover aspect-2/3 overflow-hidden rounded-lg'
-										/>
+										</CoverImage>
 									</Show>
 								</div>
+								<Show when={book()?.meta.description}>
+									<div class='flex flex-wrap gap-1.5 mt-2'>
+										<GlassButton
+											class='w-full'
+											variant='primary'
+											size='lg'
+											onClick={handleStartReading}
+										>
+											<Icon name='bookOpen' size={20} />
+											Читать
+										</GlassButton>
+										<GlassButton class='w-full' size='lg' onClick={toggleShowBookmarks}>
+											<Icon
+												class={`${showBookmarks() ? 'fill-foreground' : ''} transition-all`}
+												name='bookmark'
+												size={20}
+											/>
+											Закладки ({bookmarks().length})
+										</GlassButton>
+									</div>
+								</Show>
 							</div>
 
 							{/* Details */}
@@ -182,36 +187,34 @@ const libraryBook =
 										{book()!.meta.title}
 									</h1>
 									<Show when={book()!.meta.author}>
-										<p class='text-lg text-muted-foreground'>{book()!.meta.author}</p>
+										<div class='flex items-center gap-2 justify-between flex-wrap'>
+											<p class='text-lg text-muted-foreground'>{book()!.meta.author}</p>
+											<div class='flex flex-wrap gap-1'>
+												<div class='px-3 py-1.5 rounded-full text-xs font-medium bg-secondary border border-border text-secondary-foreground'>
+													{book()!.chapters?.length ?? 0} глав
+												</div>
+												<div class='px-3 py-1.5 rounded-full text-xs font-medium bg-secondary border border-border uppercase tracking-wide text-secondary-foreground'>
+													{getFileExtension(book()!.meta?.path)}
+												</div>
+												<Show when={book()!.meta.language}>
+													<div class='px-3 py-1.5 rounded-full text-xs font-medium bg-secondary border border-border text-secondary-foreground backdrop-blur-sm'>
+														{book()!.meta.language}
+													</div>
+												</Show>
+											</div>
+										</div>
 									</Show>
 								</div>
 
 								{/* Meta badges */}
 								<div class='space-y-3'>
 									{/* badges */}
-									<div class='flex flex-wrap gap-2'>
-										<Show when={book()!.meta.language}>
-											<div class='px-3 py-1.5 rounded-full text-xs font-medium bg-secondary border border-border text-secondary-foreground backdrop-blur-sm'>
-												{book()!.meta.language}
-											</div>
-										</Show>
-
-										<div class='px-3 py-1.5 rounded-full text-xs font-medium bg-secondary border border-border text-secondary-foreground'>
-											{book()!.chapters?.length ?? 0} глав
-										</div>
-
-										<div class='px-3 py-1.5 rounded-full text-xs font-medium bg-secondary border border-border uppercase tracking-wide text-secondary-foreground'>
-											{getFileExtension(book()!.meta?.path)}
-										</div>
-									</div>
 
 									{/* info */}
 									<div class='grid grid-cols-2 sm:grid-cols-3 gap-1 text-sm'>
 										<div class='rounded-2xl bg-secondary border border-border p-2 group'>
-											<div class='text-muted-foreground text-xs mb-1'>
-												Уникальный ID
-											</div>
-											<div class='font-mono text-xs break-all opacity-90 line-clamp-1 group-hover:line-clamp-none'>
+											<div class='text-muted-foreground text-xs mb-1'>Уникальный ID</div>
+											<div class='font-mono text-xs break-all opacity-90 line-clamp-1 group-focus:line-clamp-none'>
 												{book()!.id}
 											</div>
 										</div>
@@ -221,7 +224,7 @@ const libraryBook =
 											onClick={handleCopyPath}
 										>
 											<div class='text-muted-foreground text-xs mb-1'>Путь</div>
-											<div class='font-mono text-xs break-all opacity-80 line-clamp-1 group-hover:line-clamp-none'>
+											<div class='font-mono text-xs break-all opacity-80 line-clamp-1 group-focus:line-clamp-none'>
 												{book()!.meta.path.split('/').slice(-1)[0]}
 											</div>
 										</div>
@@ -229,16 +232,14 @@ const libraryBook =
 										<div class='rounded-2xl bg-secondary border border-border p-2 group'>
 											<div class='text-muted-foreground text-xs mb-1'>Добавлено</div>
 											<div class='line-clamp-1 group-hover:line-clamp-none'>
-												{getTimeAgo(book()!.meta.lastModified)}
+												{getTimeAgo(book()!.meta.created_at)}
 											</div>
 										</div>
 
 										<div class='rounded-2xl bg-secondary border border-border p-2'>
-											<div class='text-muted-foreground text-xs mb-1'>
-												Время чтения
-											</div>
+											<div class='text-muted-foreground text-xs mb-1'>Время чтения</div>
 											<div>
-												{formattedTime(timeRead(book()?.meta.charsRead ?? 0), 'm')}
+												{formattedTimeText(timeRead(book()?.meta.chars_read ?? 0), 'm')}
 											</div>
 										</div>
 										<div class='rounded-2xl bg-secondary border border-border p-2'>
@@ -249,32 +250,43 @@ const libraryBook =
 								</div>
 
 								<div>
-									<div class='text-muted-foreground text-xs mb-1'>Жанры</div>
-									<div class='flex flex-wrap gap-1'>
-										{book()?.meta.genres?.map(genre => (
-											<div class='rounded-full bg-secondary text-muted-foreground px-2 py-1'>
-												{genre}
-											</div>
-										))}
-									</div>
-									<div>{book()?.meta.description}</div>
+									<Show when={book()?.meta.genres?.length ?? 0 > 0}>
+										<div class='text-muted-foreground text-xs mb-1'>Жанры</div>
+										<div class='flex flex-wrap gap-1'>
+											{book()?.meta.genres?.map(genre => (
+												<div class='rounded-full bg-secondary text-muted-foreground px-2 py-1'>
+													{genre}
+												</div>
+											))}
+										</div>
+									</Show>
+									<Show when={book()?.meta.description}>
+										<div class='text-muted-foreground text-xs mb-1 mt-2'>Аннотация</div>
+										<div>{book()?.meta.description}</div>
+									</Show>
 								</div>
 
 								{/* Actions */}
-								<div class='flex flex-wrap gap-3'>
-									<GlassButton variant='primary' size='lg' onClick={handleStartReading}>
-										<Icon name='bookOpen' size={20} />
-										Читать
-									</GlassButton>
-									<GlassButton size='lg' onClick={toggleShowBookmarks}>
-										<Icon
-											class={`${showBookmarks() ? 'fill-foreground' : ''} transition-all`}
-											name='bookmark'
-											size={20}
-										/>
-										Закладки ({bookmarks().length})
-									</GlassButton>
-								</div>
+								<Show when={!book()?.meta.description}>
+									<div class='flex flex-wrap gap-3'>
+										<GlassButton variant='primary' size='lg' onClick={handleStartReading}>
+											<Icon name='bookOpen' size={20} />
+											Читать
+										</GlassButton>
+										<GlassButton
+											size='lg'
+											onClick={toggleShowBookmarks}
+											class='shadow-none!'
+										>
+											<Icon
+												class={`${showBookmarks() ? 'fill-foreground' : ''} transition-all`}
+												name='bookmark'
+												size={20}
+											/>
+											Закладки ({bookmarks().length})
+										</GlassButton>
+									</div>
+								</Show>
 
 								{/* Bookmarks preview */}
 								<Show when={bookmarks().length > 0 && showBookmarks()}>

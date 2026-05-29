@@ -10,7 +10,7 @@ use commands::{
     add_book, add_bookmark, add_books, add_note, clear_store, delete_bookmark, delete_note,
     get_book, get_bookmark, get_bookmarks, get_books, get_notes, get_reader_state,
     get_reading_position, get_settings, open_book, save_reading_position, set_current_book,
-    update_note, update_settings, get_books_version
+    update_note, update_settings, get_books_version, get_cover_image
 };
 use tauri_plugin_store::StoreExt;
 
@@ -59,6 +59,7 @@ pub fn run() {
             get_notes,
             get_settings,
             update_settings,
+            get_cover_image,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application")

@@ -1,10 +1,11 @@
-import { Accessor, createMemo, createSignal, JSX, onMount, Show, splitProps } from "solid-js";
+import { Accessor, createSignal, JSX, onMount, Show, splitProps } from "solid-js";
 import { Book as BookType } from "../../shared/types/book";
 import { GlassPanel } from "../../shared/ui/GlassPanel";
 import { Icon } from "../../shared/ui/Icon";
+import { CoverImage } from "../../shared/ui/CoverImage";
 import { getReadingPosition } from "../../shared/api/reader";
 import { stripHtml } from "../../shared/utils/html";
-import { getFileExtension, getCoverDataUrl } from "../../shared/utils/file";
+import { getFileExtension } from "../../shared/utils/file";
 
 type BookCardProps = {
 	book: BookType;
@@ -46,8 +47,6 @@ export function BookCard(props: BookCardProps) {
 }
 
 export const BookCardGrid = (props: BookCardProps) => {
-	const coverUrl = createMemo(() => getCoverDataUrl(props.book.meta.cover));
-
 	const [percent, setPercent] = createSignal(0);
 
 		onMount(() => {
@@ -93,30 +92,25 @@ export const BookCardGrid = (props: BookCardProps) => {
 			<div class='absolute top-2 text-sm glass rounded-md right-2 p-1 py-0 z-10 border-[1px] bg-secondary/60 border-secondary/40'>
 				{getFileExtension(props.book.meta.path)}
 			</div>
-			<Show
-				when={coverUrl()}
-				fallback={
-					<div class='absolute inset-0 flex items-center justify-center p-4'>
-						<div class='text-center'>
-							<Icon
-								name='book'
-								size={32}
-								class='mx-auto mb-2 text-muted-foreground'
-							/>
-							<p class='text-xs text-muted-foreground line-clamp-3'>
-								{props.book.meta.title}
-							</p>
-						</div>
-					</div>
-				}
+			<CoverImage
+				bookId={props.book.id}
+				bookPath={props.book.meta.path}
+				alt={props.book.meta.title}
+				class='absolute inset-0 w-full h-full object-cover'
 			>
-				<img
-					src={coverUrl()!}
-					alt={props.book.meta.title}
-					class='absolute inset-0 w-full h-full object-cover'
-					loading='lazy'
-				/>
-			</Show>
+				<div class='absolute inset-0 flex items-center justify-center p-4'>
+					<div class='text-center'>
+						<Icon
+							name='book'
+							size={32}
+							class='mx-auto mb-2 text-muted-foreground'
+						/>
+						<p class='text-xs text-muted-foreground line-clamp-3'>
+							{props.book.meta.title}
+						</p>
+					</div>
+				</div>
+			</CoverImage>
 
 			{/* Gradient overlay */}
 			<div class='absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-background/100 via-background/60 to-transparent' />
@@ -138,11 +132,7 @@ export const BookCardGrid = (props: BookCardProps) => {
 
 
 export const BookCardList = (props: BookCardProps) => {
-  const coverUrl = createMemo(() => getCoverDataUrl(props.book.meta.cover));
-
 	const [percent, setPercent] = createSignal(0);
-
-
 
 	onMount(() => {
 		if (!props.book.chapters?.length) return;
@@ -156,7 +146,6 @@ export const BookCardList = (props: BookCardProps) => {
 		const value = Math.round((index / fullText.length) * 100);
 		setPercent(Math.min(Math.max(value, 1), 100));
 	});
-
 
   return (
 		<GlassPanel
@@ -183,32 +172,20 @@ export const BookCardList = (props: BookCardProps) => {
 			
 			{/* Cover */}
 			<div class='w-12 h-16 rounded-md overflow-hidden bg-secondary-hover/60 shrink-0 relative z-10'>
-				<Show
-					when={coverUrl()}
-					fallback={
-						<div class='w-full h-full flex items-center justify-center'>
-							<Icon
-								name='book'
-								size={20}
-								class='text-muted-foreground'
-							/>
-						</div>
-					}
+				<CoverImage
+					bookId={props.book.id}
+					bookPath={props.book.meta.path}
+					alt=''
+					class='w-full h-full object-cover'
 				>
-					<img
-						onError={() => (
-							<Icon
-								name='book'
-								size={20}
-								class='text-muted-foreground'
-							/>
-						)}
-						src={coverUrl()!}
-						loading='lazy'
-						alt=''
-						class='w-full h-full object-cover'
-					/>
-				</Show>
+					<div class='w-full h-full flex items-center justify-center'>
+						<Icon
+							name='book'
+							size={20}
+							class='text-muted-foreground'
+						/>
+					</div>
+				</CoverImage>
 			</div>
 
 			{/* Info */}

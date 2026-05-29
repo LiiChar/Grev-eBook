@@ -6,6 +6,7 @@ import {
   getDefaultSettings,
   type SettingStore,
   type Theme,
+  FontFamily,
 } from '../api/settings';
 
 // Create store with defaults
@@ -35,17 +36,7 @@ function applyReaderSettings(reader: SettingStore['reader']) {
     reader.pdf_zoom_lock ? '1' : '0',
   );
 
-  // Font family
-  const fontMap: Record<string, string> = {
-    serif: 'var(--font-reader)',
-    sans_serif: 'var(--font-ui)',
-    monospace: 'var(--font-mono)',
-  };
-  const fontFamily =
-    typeof reader.font_family === 'string'
-      ? fontMap[reader.font_family] ?? 'var(--font-reader)'
-      : reader.font_family.custom;
-  root.style.setProperty('--reader-font-family', fontFamily);
+  document.documentElement.dataset.readerFont = reader.reader_font;
 }
 
 // Load settings from backend
@@ -73,6 +64,17 @@ export function setTheme(theme: Theme) {
   setSettings('general', 'theme', theme);
   applyTheme(theme);
   saveSettings();
+}
+
+export function setReaderFont(font: FontFamily) {
+	const newReader = {
+		...settings.reader,
+		reader_font: font,
+	};
+
+	setSettings('reader', 'reader_font', font);
+	applyReaderSettings(newReader);
+	saveSettings();
 }
 
 export function setFontSize(size: number) {

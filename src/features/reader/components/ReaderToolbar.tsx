@@ -82,10 +82,10 @@ export function ReaderToolbar(props: ReaderToolbarProps) {
 			>
 				{/* Left */}
 				<GlassButton
-					class='rounded-lg! px-0! reader-control'
+					class='rounded-lg! px-0! reader-control sm:aspect-auto aspect-square '
 					onClick={props.onNavigateBack}
 				>
-					<div class='flex items-center gap-2  rounded-lg p-0 sm:px-2 sm:pr-4'>
+					<div class='flex items-center gap-2  rounded-lg p-0 sm:px-2 sm:pr-4 sm:px-2 '>
 						<Icon name='chevronLeft' size={18} class='-ml-0.5' />
 						<div class='hidden sm:block'>{props.book.meta.title}</div>
 					</div>
@@ -140,7 +140,7 @@ export function ReaderToolbar(props: ReaderToolbarProps) {
 					>
 						<Icon name='adjustments' size={18} />
 					</GlassButton>
-					<GlassButton
+					{/* <GlassButton
 						size='icon'
 						variant='ghost'
 						onClick={props.onToggleFullscreen}
@@ -150,7 +150,7 @@ export function ReaderToolbar(props: ReaderToolbarProps) {
 							name={props.isFullscreen ? 'arrowsCollapse' : 'arrowsExpand'}
 							size={18}
 						/>
-					</GlassButton>
+					</GlassButton> */}
 				</div>
 			</header>
 		);

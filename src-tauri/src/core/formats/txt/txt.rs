@@ -21,7 +21,7 @@ impl BookSource for TxtLoader {
             .unwrap_or(false)
     }
 
-    fn load(&self, path: &Path, chapters: bool) -> Result<Book> {
+    fn load(&self, path: &Path, load_chapters: bool, return_chapters: bool) -> Result<Book> {
         let bytes = fs::read(path)?;
         let text = self.decode_text(&bytes)?;
 
@@ -31,7 +31,7 @@ impl BookSource for TxtLoader {
             .unwrap_or("Untitled")
             .to_string();
 
-        let chapters = match chapters {
+        let chapters = match load_chapters {
             true => Some(split_into_chapters(&text)),
             false => None,
         };
@@ -42,7 +42,7 @@ impl BookSource for TxtLoader {
                 title,
                 author: None,
                 language: Some(self.get_language(&chapters.clone().unwrap_or(vec![])).unwrap_or("en".into())),
-                cover: None,
+                cover_path: None,
                 path: path.to_string_lossy().to_string(),
                 size: self.get_size(&path)?,
                 last_read_at: self.get_last_read_at(&path)?,
@@ -51,9 +51,13 @@ impl BookSource for TxtLoader {
                 description: None,
                 chars_read: Some(self.get_chars_read(&chapters.clone().unwrap_or(vec![]))?),
                 progress_read: None,
-                genres: None
+                genres: None,
+                count_chapters: chapters.clone().unwrap_or(vec![]).len() as i64,
             },
-            chapters,
+            chapters: match return_chapters {
+                true => chapters,
+                false => None,
+            },
             position: None,
         })
     }

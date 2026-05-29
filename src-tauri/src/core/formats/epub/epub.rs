@@ -25,7 +25,7 @@ impl BookSource for EpubLoader {
             .unwrap_or(false)
     }
 
-    fn load(&self, path: &Path, with_chapters: bool) -> Result<Book> {
+    fn load(&self, path: &Path, with_chapters: bool, return_chapters: bool) -> Result<Book> {
         let file = File::open(path)?;
         let mut zip = ZipArchive::new(file)?;
 
@@ -42,17 +42,13 @@ impl BookSource for EpubLoader {
             None
         };
 
-        let cover = cover_href
-            .and_then(|href| {
-                let zip_path = join_zip_path(&base_dir, &href);
-                read_zip_bytes(&mut zip, &zip_path).ok().map(|bytes| bytes_to_data_url(&bytes, &href))
-            });
+        let _cover_href = cover_href;
 
         let language = meta.language.clone().unwrap_or(self.get_language(&chapters.clone().unwrap_or(vec![])).unwrap_or("en".into()));
 
         Ok(Book {
             id: self.generate_id(meta.title.clone()),
-            meta: BookMeta { cover, language: Some(language),             
+            meta: BookMeta { cover_path: None, language: Some(language),             
                 size: self.get_size(&path)?,
                 last_read_at: self.get_last_read_at(&path)?,
                 last_modified: self.get_last_modified(&path)?,
@@ -60,9 +56,13 @@ impl BookSource for EpubLoader {
                 description: None,
                 chars_read: Some(self.get_chars_read(&chapters.clone().unwrap_or(vec![]))?),
                 progress_read: None,
+                count_chapters: chapters.clone().unwrap_or(vec![]).len() as i64,
                 ..meta
             },
-            chapters, 
+            chapters: match return_chapters {
+                true => chapters,
+                false => None,
+            },
             position: None,
         })
     }
@@ -312,7 +312,7 @@ fn parse_opf(
             title,
             author,
             language,
-            cover: None,
+            cover_path: None,
             path: path.to_string_lossy().to_string(),
 
             description,
@@ -324,6 +324,7 @@ fn parse_opf(
             size: 0,
             chars_read: Some(0),
             progress_read: None,
+            count_chapters: 0
         },
         spine,
         cover_href,
@@ -575,6 +576,87 @@ fn embed_images_base64(zip: &mut ZipArchive<File>, base_dir: &str, html: &str) -
     drop(last_error);
 
     Ok(result.to_string())
+}
+
+/// Get cover raw bytes from EPUB
+pub fn get_cover_bytes(path: &str) -> Option<(Vec<u8>, String)> {
+    use std::path::Path;
+    let path = Path::new(path);
+    let file = File::open(path).ok()?;
+    let mut zip = ZipArchive::new(file).ok()?;
+
+    let container_xml = read_zip_file(&mut zip, "META-INF/container.xml").ok()?;
+    let opf_path = find_opf_path(&container_xml).ok()?;
+    let opf_xml = read_zip_file(&mut zip, &opf_path).ok()?;
+
+    let doc = roxmltree::Document::parse(&opf_xml).ok()?;
+    let base_dir = base_dir_from_opf(&opf_path);
+
+    let mut manifest = HashMap::new();
+    let mut cover_href: Option<String> = None;
+    let mut cover_id: Option<String> = None;
+
+    for item in doc.descendants().filter(|n| n.is_element() && n.tag_name().name() == "item") {
+        let id = item.attribute("id").unwrap_or_default();
+        let href = item.attribute("href").unwrap_or_default();
+        let properties = item.attribute("properties").unwrap_or_default();
+        if !id.is_empty() && !href.is_empty() {
+            manifest.insert(id.to_string(), href.to_string());
+        }
+        if properties.contains("cover-image") {
+            cover_href = Some(href.to_string());
+        }
+    }
+
+    for meta in doc.descendants().filter(|n| n.is_element() && n.tag_name().name() == "meta") {
+        if meta.attribute("name") == Some("cover") {
+            cover_id = meta.attribute("content").map(|s| s.to_string());
+        }
+    }
+
+    if cover_href.is_none() {
+        if let Some(id) = cover_id {
+            cover_href = manifest.get(&id).cloned();
+        }
+    }
+
+    if cover_href.is_none() {
+        for href in manifest.values() {
+            let lower = href.to_lowercase();
+            if lower.contains("cover") && matches!(
+                Path::new(&lower).extension().and_then(|e| e.to_str()),
+                Some("jpg" | "jpeg" | "png" | "webp")
+            ) {
+                cover_href = Some(href.clone());
+                break;
+            }
+        }
+    }
+
+    if cover_href.is_none() {
+        for href in manifest.values() {
+            let lower = href.to_lowercase();
+            if matches!(
+                Path::new(&lower).extension().and_then(|e| e.to_str()),
+                Some("jpg" | "jpeg" | "png" | "webp")
+            ) {
+                cover_href = Some(href.clone());
+                break;
+            }
+        }
+    }
+
+    let href = cover_href?;
+    let zip_path = join_zip_path(&base_dir, &href);
+    let bytes = read_zip_bytes(&mut zip, &zip_path).ok()?;
+
+    let ext = Path::new(&href)
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_lowercase())
+        .unwrap_or_else(|| "jpg".to_string());
+
+    Some((bytes, ext))
 }
 
 fn get_mime_type(path: &str) -> &'static str {

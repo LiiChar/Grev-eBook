@@ -13,7 +13,7 @@ use regex::Regex;
 pub struct PdfLoader;
 
 impl BookSource for PdfLoader {
-    fn load(&self, path: &Path, _with_chapters: bool) -> Result<Book> {
+    fn load(&self, path: &Path, load_chapters: bool, return_chapters: bool) -> Result<Book> {
         let path_str = path
             .to_str()
             .ok_or_else(|| anyhow::anyhow!("Invalid file path"))?;
@@ -82,7 +82,7 @@ impl BookSource for PdfLoader {
                 title: title,
                 author: author,
                 language: Some(self.get_language(&chapters).unwrap_or("en".into())),
-                cover: None,
+                cover_path: None,
                 path: path.to_string_lossy().to_string(),
                 size: self.get_size(&path)?,
                 last_read_at: self.get_last_read_at(&path)?,
@@ -91,10 +91,14 @@ impl BookSource for PdfLoader {
                 description: None,
                 chars_read: Some(self.get_chars_read(&chapters.clone())?),
                 progress_read: None,
-                genres: None
+                genres: None,
+                count_chapters: chapters.len() as i64,
             },
             position: None,
-            chapters: Some(chapters),
+            chapters: match return_chapters {
+                true => Some(chapters),
+                false => None,
+            },
         })
     }
 
