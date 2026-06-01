@@ -49,5 +49,17 @@ tauri-plugin-fs = "2"
 whatlang = "0.18.0"
 rand = "0.10.1"
 rayon = "1.12.0"
+mobi-book = { git = "https://github.com/geekifier/mobi-book", version = "0.1.0" }
+scraper = "0.27.0"
+natord = "1.0.9"
+rtf-parser = "0.4.2"
+jni = "0.22.4"
 [target.'cfg(not(target_os = "android"))'.dependencies]
 mupdf = "0.6.0"
+
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = ["https://github.com/geekifier/mobi-book"]

@@ -4,6 +4,7 @@ import {
   createEffect,
   onMount,
   Show,
+	onCleanup,
 } from 'solid-js';
 import { useParams, useNavigate, useSearchParams } from '@solidjs/router';
 import { reader, setReader } from '../../../../shared/stores/readerStore';
@@ -130,26 +131,50 @@ export function ReaderPage() {
     setupShortcuts();
     setupAutoHide({ showToc, showSettings });
 
+		setTimeout(() => {
+			if (!contentRef) return;
+
+			const chapters = contentRef.querySelectorAll<HTMLElement>('.chapter');
+
+			const observer = new IntersectionObserver(
+				entries => {
+					let visibleChapter: HTMLElement | null = null;
+
+					for (const entry of entries) {
+						if (!entry.isIntersecting) continue;
+
+						visibleChapter = entry.target as HTMLElement;
+					}
+
+					if (!visibleChapter) return;
+
+					const chapterId = visibleChapter.dataset.chapterId;
+
+					if (!chapterId) return;
+
+					const index = sortedChapters().findIndex(c => c.id === chapterId);
+
+					if (index !== -1 && index !== reader.currentIndex) {
+						setReader('currentIndex', index);
+					}
+				},
+				{
+					root: contentRef,
+					rootMargin: '-45% 0px -45% 0px',
+					threshold: 0,
+				},
+			);
+
+			chapters.forEach(chapter => {
+				observer.observe(chapter);
+			});
+
+			onCleanup(() => observer.disconnect());
+		}, 300);
+
     const bookmarkId = searchParams.bookmark;
+    const chapterId = searchParams.chapter;
     setTimeout(() => {
-      if (bookmarkId && !Array.isArray(bookmarkId) && contentRef) {
-        scrollToBookmark({ bookmarkId, contentEl: contentRef! });
-        return;
-      }
-      const currentNotes = notes();
-      const currentBookmarks = bookmarks();
-			const currentBook = book();
-			const el = contentRef;
-
-			if (!currentBook || !el) return;
-
-			updateNotes(currentNotes, el);
-			updateBookmarks(currentBookmarks, el);
-
-			if (!position()) return;
-
-			scrollToAnchor(el, position()!);
-
 			contentRef?.addEventListener('click', e => {
 				const target = e.target as HTMLElement;
 
@@ -161,7 +186,6 @@ export function ReaderPage() {
 
 				if (!href) return;
 
-				// пропускаем якоря
 				if (href.startsWith('#')) return;
 
 				e.preventDefault();
@@ -170,6 +194,31 @@ export function ReaderPage() {
 				setFrame(href);
 			});
 
+      const currentNotes = notes();
+      const currentBookmarks = bookmarks();
+			const currentBook = book();
+			const el = contentRef;
+
+			if (currentBook && el) {
+				updateNotes(currentNotes, el);
+				updateBookmarks(currentBookmarks, el);
+
+				if (bookmarkId && !Array.isArray(bookmarkId) && contentRef) {
+					scrollToBookmark({ bookmarkId, contentEl: contentRef! });
+				}
+
+				if (chapterId && !Array.isArray(chapterId) && contentRef) {
+					let index = book()!.chapters.findIndex(c => c.id === chapterId);
+					if (index === -1) return;
+					goToChapter(index);
+				}
+
+				if (bookmarkId && chapterId) {
+					if (position()) {
+						scrollToAnchor(el, position()!);
+					}
+				}
+			}
     }, 300);
   });
 
@@ -208,7 +257,7 @@ export function ReaderPage() {
 				</Modal>
 				<Show when={toolPosition()}>
 					<div
-						class='absolute flex gap-1 top-0 left-0 bg-background/50 backdrop-blur-sm z-20 rounded-lg p-1 -translate-x-full'
+						class='absolute flex top-0 left-0 bg-background/50 backdrop-blur-sm z-20 rounded-full overflow-hidden -translate-x-full'
 						style={{
 							transform: `translate(${toolPosition()?.x ?? 0}px, ${toolPosition()?.y ?? 0}px)`,
 						}}

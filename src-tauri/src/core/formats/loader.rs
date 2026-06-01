@@ -1,8 +1,7 @@
 use crate::core::{
     book::model::{Book, Chapter},
     formats::{
-        docx::DocxLoader, epub::EpubLoader, fb2::Fb2Loader, html::HtmlLoader,
-        markdown::MarkdownLoader, pdf::PdfLoader, txt::TxtLoader,
+        cbz::CbzLoader, docx::DocxLoader, epub::EpubLoader, fb2::Fb2Loader, html::HtmlLoader, markdown::MarkdownLoader, mobi::MobiLoader, pdf::PdfLoader, rtf::RtfLoader, txt::TxtLoader
     },
     utils::get_files_with_extension,
 };
@@ -109,7 +108,10 @@ fn available_sources() -> Vec<Box<dyn BookSource>> {
         Box::new(HtmlLoader),
         Box::new(MarkdownLoader),
         Box::new(DocxLoader),
-        Box::new(PdfLoader),
+        // Box::new(PdfLoader),
+        Box::new(MobiLoader),
+        Box::new(CbzLoader),
+        Box::new(RtfLoader),
     ]
 }
 
@@ -168,7 +170,7 @@ fn collect_book_paths(path: &Path) -> Vec<PathBuf> {
     }
     log::debug!("Collecting book paths from {:?}", path);
     let extensions = [
-        "txt", "epub", "fb2", "zip", "html", "htm", "md", "markdown", "docx", "pdf"
+        "txt", "epub", "fb2", "zip", "html", "htm", "md", "markdown", "docx", "pdf", "cbz", "mobi", "rtf"
     ];
     let mut unique = HashSet::new();
     let mut result = Vec::new();

@@ -17,6 +17,9 @@ pub struct Fb2Loader;
 
 impl BookSource for Fb2Loader {
     fn can_load(&self, path: &Path) -> bool {
+        if (path.starts_with("content://")) {
+            return true;
+        };
         path.extension()
             .and_then(|e| e.to_str())
             .map(|e| matches!(e.to_ascii_lowercase().as_str(), "fb2" | "zip"))

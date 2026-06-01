@@ -300,6 +300,10 @@ pub async fn get_cover_image(app: AppHandle, book_id: String, book_path: String)
             crate::core::formats::fb2::get_cover_bytes(&book_path)
                 .ok_or_else(|| "No cover found in FB2".to_string())?
         }
+        "cbz" => {
+            crate::core::formats::cbz::get_cover_bytes(&book_path)
+                .ok_or_else(|| "No cover found in EPUB".to_string())?
+        }
         "epub" => {
             crate::core::formats::epub::get_cover_bytes(&book_path)
                 .ok_or_else(|| "No cover found in EPUB".to_string())?
@@ -308,7 +312,6 @@ pub async fn get_cover_image(app: AppHandle, book_id: String, book_path: String)
             return Err("Cover extraction not supported for this format".to_string());
         }
     };
-
     // Cache the cover
     save_cover(&app, &book_id, &bytes, &ext)?;
 

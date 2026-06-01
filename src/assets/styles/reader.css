@@ -110,7 +110,7 @@ body:has(.reader) .bottom-navbar {
 .chapter blockquote {
   display: block;
   border-left: 3px solid hsl(var(--primary));
-  padding: 0.5em 0 0.5em 1em;
+  padding: 0.5em 0.5em 0.5em 1em;
   margin: 1em 0 1em 0.5em;
   background: hsl(var(--secondary));
   border-radius: 0 hsl(var(--radius-sm)) hsl(var(--radius-sm)) 0;
@@ -189,6 +189,16 @@ body:has(.reader) .bottom-navbar {
   height: auto;
   border-radius: var(--radius-sm);
   margin: 0.8em 0;
+}
+
+.reader[data-type="cbz"] {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.reader[data-type="cbz"] .chapter img {
+  margin: 0;
+  border-radius: 0;
 }
 
 /* Tables */

@@ -45,22 +45,26 @@ export const Sidebar = () => {
           `}
 				>
 					{/* Logo */}
-					<div class='group h-14 flex items-center  justify-between px-4 border-b border-border relative'>
+					<div class=' h-14 flex items-center  justify-between px-4 border-b border-border relative'>
 						<Show when={!sidebarCollapsed()}>
 							<span class='font-semibold text-lg tracking-tight'>
 								<img src={logo} alt='logo' class='w-7 h-7' />
 							</span>
-							<Icon
+							<Button
 								onClick={() => appWindow.close()}
-								name='x'
-								size={18}
-								class='hover:stroke-red-600! transition-opacity cursor-pointer'
-							/>
+								variant='ghost'
+								class='aspect-square max-h-8 h-8 w-8 rounded-full -mr-1 group'
+							>
+								<Icon name='x' size={18} class='group-hover:text-destructive' />
+							</Button>
 						</Show>
 						<Show when={sidebarCollapsed()}>
-							<div class="relative">
-								<img src={logo} alt='logo' class=' max-w-8 w-full h-ful' />
-								<Button color="error" class=' transition-opacity opacity-0 group-hover:opacity-100 absolute top-0 left-0 h-full w-full p-4 cursor-pointer rounded-full scale-125'>
+							<div class='relative group'>
+								<img src={logo} alt='logo' class=' max-w-8 w-full h-fulf' />
+								<Button
+									color='error'
+									class=' transition-opacity opacity-0 group-hover:opacity-100 absolute top-0 left-0 h-full w-full p-4 cursor-pointer rounded-full scale-125'
+								>
 									<Icon onClick={() => appWindow.close()} name='x' size={18} />
 								</Button>
 							</div>

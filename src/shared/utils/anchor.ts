@@ -4,7 +4,7 @@ export function getReadingAnchor(
 	root: HTMLElement,
 	chapterId: string,
 	customSentence?: string,
-): [ReadingPosition, number] | null {
+): [ReadingPosition, number] {
 	const createWalker = () =>
 		document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
 			acceptNode(node) {
@@ -14,15 +14,24 @@ export function getReadingAnchor(
 			},
 		});
 
-	// общий счётчик символов по главе
 	let acc = 0;
 
-	const countNode = (node: Text) => {
-		return (node.textContent || '').replace(/\s+/g, ' ').length;
-	};
+	const countNode = (node: Text) =>
+		(node.textContent || '').replace(/\s+/g, ' ').length;
+
+	// дефолтный результат (если ничего не нашли)
+	let fallback: [ReadingPosition, number] = [
+		{
+			chapter_id: chapterId,
+			anchor_text: '',
+			before: '',
+			after: '',
+		},
+		0,
+	];
 
 	// =====================================
-	// 1️⃣ ПРИОРИТЕТ: кастомное предложение
+	// 1️⃣ кастомное предложение
 	// =====================================
 	if (customSentence) {
 		const walker = createWalker();
@@ -52,11 +61,21 @@ export function getReadingAnchor(
 
 			acc += countNode(node);
 		}
-		return null;
+
+		// если не нашли — возвращаем пустой результат, но с acc
+		return [
+			{
+				chapter_id: chapterId,
+				anchor_text: '',
+				before: '',
+				after: '',
+			},
+			acc,
+		];
 	}
 
 	// =====================================
-	// 2️⃣ ФОЛБЭК: центр экрана
+	// 2️⃣ центр экрана
 	// =====================================
 	const walker = createWalker();
 	const centerY = root.scrollTop + root.clientHeight / 2;
@@ -89,10 +108,36 @@ export function getReadingAnchor(
 		acc += countNode(node);
 	}
 
-	return null;
+	// ничего не нашли вообще
+	return [
+		{
+			chapter_id: chapterId,
+			anchor_text: '',
+			before: '',
+			after: '',
+		},
+		acc,
+	];
 }
 
 export function scrollToAnchor(root: HTMLElement, anchor: ReadingPosition) {
+
+	if (!anchor.anchor_text?.trim()) {
+		const chapterEl = root.querySelector('[data-chapter-id]');
+
+		if (chapterEl instanceof HTMLElement) {
+			const top = chapterEl.getBoundingClientRect().top + root.scrollTop;
+
+			root.scrollTo({
+				top: Math.max(0, top - 120),
+				behavior: 'smooth',
+			});
+		} else {
+			root.scrollTo({ top: 0, behavior: 'smooth' });
+		}
+
+		return true;
+	}
 	// Создаем walker который включает текст внутри <mark> элементов
 	const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
 		acceptNode(node) {

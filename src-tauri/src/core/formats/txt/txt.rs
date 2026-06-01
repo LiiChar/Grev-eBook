@@ -15,6 +15,9 @@ pub struct TxtLoader;
 
 impl BookSource for TxtLoader {
     fn can_load(&self, path: &Path) -> bool {
+                if (path.starts_with("content://")) {
+            return true;
+        };
         path.extension()
             .and_then(|e| e.to_str())
             .map(|e| e.eq_ignore_ascii_case("txt"))

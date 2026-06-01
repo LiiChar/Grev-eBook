@@ -1,6 +1,6 @@
 import { getReadingAnchor } from '../../../shared/utils/anchor';
 import { saveReadingPosition } from '../../../shared/api/reader';
-import type { ReaderMode, ReaderState } from '../../../shared/api/reader';
+import type { ReaderMode, ReaderState, ReadingPosition } from '../../../shared/api/reader';
 import { reader, setReader, updateBook } from '@/shared/stores/readerStore';
 
 export interface UseReadingPositionReturn {
@@ -30,8 +30,7 @@ export function useReadingPosition(): UseReadingPositionReturn {
 		bookPath,
 		mode,
 	}: SaveOptions): Promise<[ReaderState, number] | undefined> {
-		const anchor = getReadingAnchor(contentEl, chapterId);
-		if (!anchor) return;
+		let anchor = getReadingAnchor(contentEl, chapterId);
 
 		const [position, globalOffset] = anchor;
 

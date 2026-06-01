@@ -49,7 +49,7 @@ const BookGridCard: Component<BookCardBaseProps> = props => {
 				group relative aspect-2/3 rounded-lg overflow-hidden cursor-pointer
 				bg-secondary hover:bg-secondary-hover/60
 				border border-border hover:border-border/60
-				transition-all duration-200 hover:scale-[1.02] hover:shadow-xl
+				transition-all duration-200  hover:shadow-xl hover:border-primary
 				animate-fade-in
 			`}
 			style={{ 'animation-delay': `${Math.min(props.index, 20) * 0.03}s` }}
@@ -69,14 +69,14 @@ const BookGridCard: Component<BookCardBaseProps> = props => {
 					/>
 				</div>
 			)}
-			<div class='absolute top-2 text-sm glass rounded-md right-2 p-1 py-0 z-10 border bg-secondary/60 border-secondary/40'>
+			<div class='absolute top-2 text-sm rounded-md right-2 p-1 py-0 z-10 border bg-secondary border-secondary/40'>
 				{getFileExtension(props.book.meta.path)}
 			</div>
 			<CoverImage
 				bookId={props.book.id}
 				bookPath={props.book.meta.path}
 				alt={props.book.meta.title}
-				class='absolute inset-0 w-full h-full object-cover'
+				class='absolute inset-0 w-full h-full object-cover group-hover:scale-[1.05] transition-all'
 			>
 				<div class='absolute inset-0 flex items-center justify-center p-4'>
 					<div class='text-center'>
@@ -115,7 +115,7 @@ const BookListCard: Component<BookCardBaseProps> = props => {
 			onClick={props.onClick}
 		>
 			{(props.book.meta.progress_read ?? 0) / (props.book.meta.chars_read ?? 0) * 100 > 0 && (
-				<div class='absolute inset-0 rounded-md z-[5] pointer-events-none overflow-hidden'>
+				<div class='absolute inset-0 rounded-md z-5 pointer-events-none overflow-hidden'>
 					<div
 						class='h-full transition-[width] duration-200 bg-primary/10'
 						style={{ width: `${(props.book.meta.progress_read ?? 0) / (props.book.meta.chars_read ?? 0) * 100}%` }}
@@ -296,11 +296,26 @@ export function LibraryPage() {
 			multiple: false,
 			filters: [
 				{
-					name: "Books",
-					extensions: ["epub", "pdf", "fb2", "txt", "html", "htm", "md", "pdf"],
+					name: 'Books',
+					extensions: [
+						'txt',
+						'epub',
+						'fb2',
+						'zip',
+						'html',
+						'htm',
+						'md',
+						'markdown',
+						'docx',
+						'pdf',
+						'cbz',
+						'mobi',
+						'rtf',
+					],
 				},
 			],
 		});
+		console.log("Selected file:", file);
 		if (!file) return;
 
 		try {

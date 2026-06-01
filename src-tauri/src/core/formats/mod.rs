@@ -6,5 +6,8 @@ mod loader;
 mod markdown;
 mod pdf;
 mod txt;
+mod mobi;
+mod rtf;
+pub mod cbz;
 
 pub use loader::{get_book, get_books};

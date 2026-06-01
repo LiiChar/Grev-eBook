@@ -23,6 +23,7 @@ pub fn save_cover(app: &AppHandle, book_id: &str, bytes: &[u8], ext: &str) -> Re
     let covers_dir = get_covers_dir(app)?;
     let filename = format!("{}.{}", book_id, ext);
     let filepath = covers_dir.join(&filename);
+    println!("Save cover to {}, book_id: {}, ext {}", filepath.display(), book_id, ext);
 
     fs::write(&filepath, bytes).map_err(|e| format!("Failed to write cover file: {}", e))?;
 

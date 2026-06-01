@@ -113,6 +113,24 @@ const libraryBook =
 		toast.success('Путь скопирован');
 	}
 
+const getReadTimeChars = (book: Book) => {
+	const ext = getFileExtension(book.meta.path);
+	const chars = book.meta.chars_read ?? 0;
+
+	const factorMap: Record<string, number> = {
+		cbz: 0.0002, // base64 ≠ текст → почти не влияет на reading time
+		epub: 0.85,
+		fb2: 0.85,
+		mobi: 0.8,
+		pdf: 0.75,
+		txt: 1,
+	};
+
+	const factor = factorMap[ext] ?? 0.7;
+
+	return Math.floor(chars * factor);
+};
+
 
   return (
 			<div class='h-full overflow-y-auto'>
@@ -238,9 +256,7 @@ const libraryBook =
 
 										<div class='rounded-2xl bg-secondary border border-border p-2'>
 											<div class='text-muted-foreground text-xs mb-1'>Время чтения</div>
-											<div>
-												{formattedTimeText(timeRead(book()?.meta.chars_read ?? 0), 'm')}
-											</div>
+											<div>{formattedTimeText(timeRead(getReadTimeChars(book()!)), 'm')}</div>
 										</div>
 										<div class='rounded-2xl bg-secondary border border-border p-2'>
 											<div class='text-muted-foreground text-xs mb-1'>Размер</div>

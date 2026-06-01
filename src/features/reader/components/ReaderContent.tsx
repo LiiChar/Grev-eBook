@@ -1,6 +1,20 @@
-import { For, Show, createMemo, createEffect, onCleanup, onMount } from 'solid-js';
+import {
+	For,
+	Show,
+	createMemo,
+	createEffect,
+	onCleanup,
+	onMount,
+} from 'solid-js';
 import type { Book, Chapter } from '../../../shared/types/book';
-import { settings, setPdfZoom, setPdfZoomLock } from '@/shared/stores/settingsStore';
+import {
+	settings,
+	setPdfZoom,
+	setPdfZoomLock,
+} from '@/shared/stores/settingsStore';
+import { setReader } from '@/shared/stores/readerStore';
+import { getFileExtension } from '@/shared/utils/file';
+
 
 export interface ReaderContentProps {
 	book: Book;
@@ -16,14 +30,10 @@ export interface ReaderContentProps {
 
 export function ReaderContent(props: ReaderContentProps) {
 	if (props.book.meta.path.endsWith('.pdf')) {
-		return (
-			<ReaderContentPDF {...props} />
-		);
+		return <ReaderContentPDF {...props} />;
 	}
 
-	return (
-		<ReaderContentСommon {...props} />
-	);
+	return <ReaderContentСommon {...props} />;
 }
 
 export function ReaderContentPDF(props: ReaderContentProps) {
@@ -35,6 +45,8 @@ export function ReaderContentPDF(props: ReaderContentProps) {
 		() => sortedChapters()[props.currentIndex()],
 	);
 
+	
+
 	return (
 		<div
 			ref={props.contentRef}
@@ -42,7 +54,8 @@ export function ReaderContentPDF(props: ReaderContentProps) {
 			onScroll={props.onScroll}
 		>
 			<article
-			  lang={props.book.meta.language}
+				data-type={getFileExtension(props.book.meta.path)}
+				lang={props.book.meta.language}
 				class='reader mx-auto px-6 py-8 overflow-x-auto'
 				style={{
 					'max-width': `${props.settings.columnWidth}px`,
@@ -97,6 +110,7 @@ export function ReaderContentСommon(props: ReaderContentProps) {
 			onScroll={props.onScroll}
 		>
 			<article
+				data-type={getFileExtension(props.book.meta.path)}
 				lang={props.book.meta.language}
 				class='reader mx-auto px-6 py-8 overflow-x-hidden'
 				style={{
@@ -137,16 +151,11 @@ type ContentChapterProps = {
 };
 
 export function ContentChapter(props: ContentChapterProps) {
-
 	if (props.book.meta.path.endsWith('.pdf')) {
-		return (
-			<ContentChapterPDF chapter={props.chapter} />
-		);
+		return <ContentChapterPDF chapter={props.chapter} />;
 	}
 
-	return (
-		<ContentChapterCommon chapter={props.chapter} />
-	);
+	return <ContentChapterCommon chapter={props.chapter} />;
 }
 
 type ContentChapterTypeProps = {
@@ -187,27 +196,44 @@ export function ContentChapterPDF(props: ContentChapterTypeProps) {
 		const pageH = page.clientHeight || pdfHeight;
 		const prevScale = currentScale || 1;
 		const container = ref;
-		const relCenterX = (container.scrollLeft + container.clientWidth / 2) / (pageW * prevScale);
-		const relCenterY = (container.scrollTop + container.clientHeight / 2) / (pageH * prevScale);
+		const relCenterX =
+			(container.scrollLeft + container.clientWidth / 2) / (pageW * prevScale);
+		const relCenterY =
+			(container.scrollTop + container.clientHeight / 2) / (pageH * prevScale);
 
 		page.style.transform = `scale(${scale})`;
 
 		ref.style.height = `${pdfHeight * scale}px`;
-		ref.style.width = settings.reader.pdf_zoom_lock ? `${pdfWidth * scale}px` : '100%';
+		ref.style.width = settings.reader.pdf_zoom_lock
+			? `${pdfWidth * scale}px`
+			: '100%';
 		currentScale = scale;
 
 		// adjust scroll to keep same relative center
-		const newScrollLeft = Math.max(0, relCenterX * pageW * scale - container.clientWidth / 2);
-		const newScrollTop = Math.max(0, relCenterY * pageH * scale - container.clientHeight / 2);
-		container.scrollLeft = Math.min(newScrollLeft, Math.max(0, pageW * scale - container.clientWidth));
-		container.scrollTop = Math.min(newScrollTop, Math.max(0, pageH * scale - container.clientHeight));
+		const newScrollLeft = Math.max(
+			0,
+			relCenterX * pageW * scale - container.clientWidth / 2,
+		);
+		const newScrollTop = Math.max(
+			0,
+			relCenterY * pageH * scale - container.clientHeight / 2,
+		);
+		container.scrollLeft = Math.min(
+			newScrollLeft,
+			Math.max(0, pageW * scale - container.clientWidth),
+		);
+		container.scrollTop = Math.min(
+			newScrollTop,
+			Math.max(0, pageH * scale - container.clientHeight),
+		);
 	};
 
 	createEffect(() => {
 		// explicitly read settings here so Solid tracks these dependencies
 		const _zoom = settings.reader.pdf_zoom;
 		const _lock = settings.reader.pdf_zoom_lock;
-		_zoom; _lock;
+		_zoom;
+		_lock;
 		updatePdfScale();
 	});
 
@@ -265,12 +291,12 @@ export function ContentChapterPDF(props: ContentChapterTypeProps) {
 			const page = ref.querySelector<HTMLDivElement>('#page0');
 			if (!page) return;
 			const pdfWidth = Number(page.getAttribute('pdf-width')) || 1;
-			const containerWidth = ref.clientWidth || ref.parentElement?.clientWidth || 1;
+			const containerWidth =
+				ref.clientWidth || ref.parentElement?.clientWidth || 1;
 			let newScale = Math.max(0.5, Math.min(3, startScale * factor));
 			page.style.transform = `scale(${newScale})`;
 			ref.style.height = `${(Number(page.getAttribute('pdf-height')) || 0) * newScale}px`;
 			currentScale = newScale;
-
 		};
 
 		const onTouchEnd = (e: TouchEvent) => {
@@ -281,7 +307,8 @@ export function ContentChapterPDF(props: ContentChapterTypeProps) {
 				const page = ref.querySelector<HTMLDivElement>('#page0');
 				if (!page) return;
 				const pdfWidth = Number(page.getAttribute('pdf-width')) || 1;
-				const fitScale = (ref.clientWidth || ref.parentElement?.clientWidth || 1) / pdfWidth;
+				const fitScale =
+					(ref.clientWidth || ref.parentElement?.clientWidth || 1) / pdfWidth;
 				const zoomValue = currentScale / fitScale;
 				setPdfZoom(zoomValue);
 			}
@@ -301,7 +328,8 @@ export function ContentChapterPDF(props: ContentChapterTypeProps) {
 				const page = ref.querySelector<HTMLDivElement>('#page0');
 				if (page) {
 					const pdfWidth = Number(page.getAttribute('pdf-width')) || 1;
-					const fitScale = (ref.clientWidth || ref.parentElement?.clientWidth || 1) / pdfWidth;
+					const fitScale =
+						(ref.clientWidth || ref.parentElement?.clientWidth || 1) / pdfWidth;
 					setPdfZoom(currentScale / fitScale);
 				}
 			}
@@ -332,6 +360,7 @@ export function ContentChapterPDF(props: ContentChapterTypeProps) {
 		/>
 	);
 }
+
 
 export function ContentChapterCommon(props: ContentChapterTypeProps) {
 	return (

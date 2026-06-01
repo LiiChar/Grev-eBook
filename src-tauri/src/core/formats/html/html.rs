@@ -13,6 +13,9 @@ pub struct HtmlLoader;
 
 impl BookSource for HtmlLoader {
     fn can_load(&self, path: &Path) -> bool {
+                if (path.starts_with("content://")) {
+            return true;
+        };
         path.extension()
             .and_then(|e| e.to_str())
             .map(|e| matches!(e.to_ascii_lowercase().as_str(), "html" | "htm"))
