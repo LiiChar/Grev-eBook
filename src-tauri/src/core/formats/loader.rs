@@ -6,6 +6,7 @@ use crate::core::{
     utils::get_files_with_extension,
 };
 
+use html2text::from_read;
 use rand::RngExt;
 use regex::Regex;
 use sha2::{Digest, Sha256};
@@ -93,11 +94,40 @@ pub trait BookSource {
     fn get_chars_read(&self, chapters: &[Chapter]) -> Result<u64> {
         let count = chapters
             .iter()
-            .map(|c| c.html.chars().count() as u64)
+            .map(|c| count_text_chars(&c.html))
             .sum();
-        println!("chars_read: {}", chapters.len());
         Ok(count)
     }
+}
+
+fn count_text_chars(html: &str) -> u64 {
+    let mut text = String::with_capacity(html.len());
+
+    let mut inside_tag = false;
+
+    for ch in html.chars() {
+        match ch {
+            '<' => inside_tag = true,
+            '>' => inside_tag = false,
+            _ if !inside_tag => text.push(ch),
+            _ => {}
+        }
+    }
+
+    let text = text
+        .replace("&nbsp;", " ")
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&#39;", "'");
+
+    let normalized = text
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    normalized.chars().count() as u64
 }
 
 fn available_sources() -> Vec<Box<dyn BookSource>> {
@@ -108,7 +138,7 @@ fn available_sources() -> Vec<Box<dyn BookSource>> {
         Box::new(HtmlLoader),
         Box::new(MarkdownLoader),
         Box::new(DocxLoader),
-        // Box::new(PdfLoader),
+        Box::new(PdfLoader),
         Box::new(MobiLoader),
         Box::new(CbzLoader),
         Box::new(RtfLoader),

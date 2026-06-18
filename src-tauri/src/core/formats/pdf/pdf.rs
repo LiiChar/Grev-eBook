@@ -37,21 +37,13 @@ impl BookSource for PdfLoader {
                 .map_err(|e| anyhow::anyhow!("Failed get pages from pdf document by {}", e))?;
 
             title = match doc.metadata(mupdf::MetadataName::Title) {
-                Ok(t) => {
-                    if t.is_empty() {
-                        title
-                    } else {
-                        t
-                    }
-                },
-                Err(_) => {
-                    title
-                },
+                Ok(t) if !t.is_empty() => decode_pdf_metadata(t),
+                _ => title,
             };
 
             author = match doc.metadata(mupdf::MetadataName::Author) {
-                Ok(a) => Some(a),
-                Err(_) => None,
+                Ok(a) if !a.is_empty() => Some(decode_pdf_metadata(a)),
+                _ => None,
             };
 
             for (i, page) in pages.enumerate() {
@@ -167,4 +159,38 @@ fn normalize_pdf_html(html: &str) -> String {
     }).to_string();
 
     html
+}
+
+
+use encoding_rs::WINDOWS_1251;
+
+fn decode_pdf_metadata(value: String) -> String {
+    let value = value.trim();
+
+    // <D4EBE8E5F0>
+    if value.starts_with('<') && value.ends_with('>') {
+        let hex = &value[1..value.len() - 1];
+
+        if let Ok(bytes) = hex::decode(hex) {
+            let (text, _, _) = WINDOWS_1251.decode(&bytes);
+            return text.to_string();
+        }
+    }
+
+    // 4D6963726F...
+    if value.len() % 2 == 0
+        && value.chars().all(|c| c.is_ascii_hexdigit())
+    {
+        if let Ok(bytes) = hex::decode(value) {
+            let (text, _, _) = WINDOWS_1251.decode(&bytes);
+
+            let decoded = text.to_string();
+
+            if decoded.chars().any(|c| c.is_alphabetic()) {
+                return decoded;
+            }
+        }
+    }
+
+    value.to_string()
 }

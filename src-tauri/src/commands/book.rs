@@ -21,87 +21,49 @@ fn now_ts() -> i64 {
 }
 
 fn merge_books(existing_books: &mut Vec<Book>, incoming_books: Vec<Book>) {
-    let mut existing_by_id = existing_books
-        .iter()
-        .cloned()
+    let mut by_id: HashMap<String, Book> = existing_books
+        .drain(..)
         .map(|b| (b.id.clone(), b))
-        .collect::<HashMap<_, _>>();
-    let mut existing_by_path = existing_books
-        .iter()
-        .map(|b| (b.meta.path.clone(), b.id.clone()))
-        .collect::<HashMap<_, _>>();
+        .collect();
 
-    let mut merged = Vec::with_capacity(existing_books.len() + incoming_books.len());
+    let mut by_path: HashMap<String, String> = by_id
+        .values()
+        .map(|b| (b.meta.path.clone(), b.id.clone()))
+        .collect();
+
+    let mut result = Vec::with_capacity(by_id.len() + incoming_books.len());
 
     for mut book in incoming_books {
-        let existing_id = existing_by_path
-            .remove(&book.meta.path)
-            .or_else(|| existing_by_id.get(&book.id).map(|_| book.id.clone()));
+        let id = by_path
+            .get(&book.meta.path)
+            .cloned()
+            .or_else(|| by_id.contains_key(&book.id).then(|| book.id.clone()));
 
-        if let Some(id) = existing_id {
-            if let Some(old) = existing_by_id.remove(&id) {
-                book.id = old.id.clone();
+        if let Some(id) = id {
+            if let Some(old) = by_id.remove(&id) {
+                book.id = old.id;
+
                 if book.chapters.as_ref().map(|c| c.is_empty()).unwrap_or(true) {
                     book.chapters = old.chapters;
                 }
             }
         }
 
-        merged.push(book);
+        by_path.insert(book.meta.path.clone(), book.id.clone());
+        by_id.insert(book.id.clone(), book);
     }
 
-    merged.extend(existing_by_id.into_values());
-    *existing_books = merged;
+    result.extend(by_id.into_values());
+    *existing_books = result;
 }
-
 #[tauri::command]
 pub async fn open_book(app: AppHandle, path: String) -> Result<Book, String> {
-    log::log!(log::Level::Info, "Command - book: open_book");
+    let now = Instant::now();
     let path = Path::new(&path);
-    // --- Load persisted state from store ---
-    let store = app.store(STORE_PATH).map_err(|e| format!("Failed to open store: {}", e))?;
-    let mut state = load_state(&store);
 
-    // Fast path: if already loaded with chapters, return
-    if let Some(existing) = state
-        .book
-        .books
-        .iter()
-        .find(|b| b.meta.path == path.to_string_lossy())
-    {
-        if existing.chapters.as_ref().map_or(false, |c| !c.is_empty()) {
-            return Ok(existing.clone());
-        }
-    }
-
-    // Load book from disk (may be heavy)
     let loaded_book = gBook(path, Some(true), Some(true)).map_err(|e| format!("Failed to load book from path: {}", e))?;
 
-    // Update persisted state immediately
-    let book_index = state
-        .book
-        .books
-        .iter()
-        .position(|b| b.meta.path == loaded_book.meta.path);
-
-    match book_index {
-        Some(idx) => {
-            let mut updated = loaded_book.clone();
-            updated.id = state.book.books[idx].id.clone();
-            state.book.books[idx] = updated;
-        }
-        None => {
-            state.book.books.push(loaded_book.clone());
-        }
-    }
-
-    save_state(&store, &state).map_err(|e| e.to_string())?;
-    // update books version
-    let ver = now_ts();
-    let _ = store.set("books_version", serde_json::to_value(ver).unwrap());
-    let _ = store.save();
-    let _ = app.emit("books:changed", Some(ver));
-
+    log::log!(log::Level::Info, "Command - book: open_book {:?}", now.elapsed());
     Ok(loaded_book)
 }
 
@@ -168,7 +130,9 @@ pub async fn get_books(app: AppHandle) -> Result<Vec<Book>, String> {
     let now = Instant::now();
 
     let store = app.store(STORE_PATH).map_err(|e| format!("Failed to open store: {}", e))?;
+
     let state = load_state(&store);
+
     let session = state.reader.sessions;
 
     let books = state
@@ -188,6 +152,8 @@ pub async fn get_books(app: AppHandle) -> Result<Vec<Book>, String> {
             }
         })
         .collect();
+
+
     log::info!("Command - book: get_books - {:?}", now.elapsed());
     Ok(books)
 }

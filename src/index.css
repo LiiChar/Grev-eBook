@@ -725,10 +725,3 @@ input[type="range"]::-moz-range-thumb {
     transform: rotate(180deg);
   }
 }
-
-
-.chapter {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 1200px;
-  contain: layout style paint;
-}

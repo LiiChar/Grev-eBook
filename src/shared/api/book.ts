@@ -26,7 +26,9 @@ export const addBook = async (path: string): Promise<Book> => {
 };
 
 export const openBook = async (path: string) => {
+  console.time("openBook");
   const book = await invoke<Book>("open_book", { path });
+  console.timeEnd('openBook');
   return book;
 };
 

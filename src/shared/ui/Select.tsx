@@ -41,7 +41,7 @@ export const Select = <T extends string>(props: SelectProps<T>) => {
 				class='
           w-full flex items-center justify-between gap-2
           px-3 py-2 text-sm
-          rounded-[var(--radius)]
+          rounded-lg
           border border-border
           bg-secondary
           text-foreground

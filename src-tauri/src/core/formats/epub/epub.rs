@@ -387,7 +387,7 @@ fn load_chapters(
         chapters.push(Chapter {
             id: Uuid::new_v4().to_string(),
             title,
-            html,
+            html: collaps_style(&html),
             order: idx,
         });
     }
@@ -676,4 +676,28 @@ fn get_mime_type(path: &str) -> &'static str {
     } else {
         "image/jpeg" // по умолчанию
     }
+}
+
+
+fn collaps_style(html: &str) -> String {
+    let style_re = Regex::new(r"(?is)<style[^>]*>(.*?)</style>").unwrap();
+    let rule_re = Regex::new(r"(?s)([^{}@]+?)\s*\{([^}]*)\}").unwrap();
+
+    style_re
+        .replace_all(html, |caps: &regex::Captures| {
+            let css = &caps[1];
+
+            let scoped = rule_re.replace_all(css, |rule: &regex::Captures| {
+                let selectors = rule[1]
+                    .split(',')
+                    .map(|s| format!(".chapter {}", s.trim()))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+
+                format!("{} {{{}}}", selectors, &rule[2])
+            });
+
+            format!("<style>{}</style>", scoped)
+        })
+        .to_string()
 }

@@ -107,22 +107,26 @@ const BookListCard: Component<BookCardBaseProps> = props => {
 		<GlassPanel
 			class={`
 				flex items-center gap-4 cursor-pointer
-				hover:bg-secondary-hover/60 transition-all duration-150 overflow-hidden
+				hover:bg-secondary/60 transition-all duration-150 overflow-hidden
 				animate-fade-in
 			`}
 			padding='sm'
 			rounded='md'
 			onClick={props.onClick}
 		>
-			{(props.book.meta.progress_read ?? 0) / (props.book.meta.chars_read ?? 0) * 100 > 0 && (
+			{((props.book.meta.progress_read ?? 0) / (props.book.meta.chars_read ?? 0)) *
+				100 >
+				0 && (
 				<div class='absolute inset-0 rounded-md z-5 pointer-events-none overflow-hidden'>
 					<div
 						class='h-full transition-[width] duration-200 bg-primary/10'
-						style={{ width: `${(props.book.meta.progress_read ?? 0) / (props.book.meta.chars_read ?? 0) * 100}%` }}
+						style={{
+							width: `${((props.book.meta.progress_read ?? 0) / (props.book.meta.chars_read ?? 0)) * 100}%`,
+						}}
 					/>
 				</div>
 			)}
-			<div class='w-12 h-16 rounded-md overflow-hidden bg-secondary-hover/60 shrink-0 relative z-10'>
+			<div class='aspect-2/3 h-30 rounded-md overflow-hidden bg-secondary-hover/60 shrink-0 relative z-10'>
 				<CoverImage
 					bookId={props.book.id}
 					bookPath={props.book.meta.path}
@@ -138,9 +142,11 @@ const BookListCard: Component<BookCardBaseProps> = props => {
 				<h3 class='font-medium truncate'>
 					{props.book.meta.title || 'Без названия'}
 				</h3>
-				<p class='text-sm text-muted-foreground truncate'>
-					{props.book.meta.author || 'Неизвестный автор'}
-				</p>
+				<div class='text-sm text-muted-foreground/60 truncate flex gap-1'>
+					<div class=''>{props.book.meta.author || 'Неизвестный автор'}</div>
+				</div>
+				<p></p>
+				<p class='line-clamp-3'>{props.book.meta.description}</p>
 			</div>
 			<span class='text-xs text-muted-foreground shrink-0 relative z-10'>
 				{props.book.chapters?.length ?? 0} глав
@@ -161,7 +167,13 @@ export function LibraryPage() {
 	const [isLoading, setIsLoading] = createSignal(!reader.booksLoaded);
 	const [searchQuery, setSearchQuery] = createSignal('');
 	const [sortKey, setSortKey] = createSignal<SortKey>('title');
-	const [viewMode, setViewMode] = createSignal<'grid' | 'list'>('grid');
+
+	const [viewMode, setViewMode] = createSignal<'grid' | 'list'>((() => {
+		let mode = localStorage.getItem('libraryViewMode');
+		if (mode === 'list') return 'list';
+		if (mode === 'grid') return 'grid';
+		return 'grid';
+	})());
 
 	const PAGE_SIZE = 60;
 	const LOAD_MORE_STEP = 40;
@@ -356,13 +368,19 @@ export function LibraryPage() {
 						<div class='flex items-center gap-2'>
 							<div class='flex rounded-lg overflow-hidden border border-border'>
 								<button
-									onClick={() => setViewMode('grid')}
+									onClick={() => {
+										setViewMode('grid');
+										localStorage.setItem('libraryViewMode', 'grid');
+									}}
 									class={`p-2 transition-colors ${viewMode() === 'grid' ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}
 								>
-									<Icon name='bars3' size={18} />
+									<Icon name='grid' size={18} />
 								</button>
 								<button
-									onClick={() => setViewMode('list')}
+									onClick={() => {
+										setViewMode('list')
+										localStorage.setItem('libraryViewMode', 'list');
+									}}
 									class={`p-2 transition-colors ${viewMode() === 'list' ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}
 								>
 									<Icon name='listBullet' size={18} />
@@ -378,7 +396,7 @@ export function LibraryPage() {
 			<div
 				ref={scrollRef}
 				onScroll={handleScroll}
-				class='flex-1 overflow-y-auto p-6'
+				class='flex-1 overflow-y-auto p-2 md:p-4 lg:p-6'
 			>
 				<SkeletonLibrary loading={isLoading} />
 

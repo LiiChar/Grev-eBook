@@ -1,12 +1,11 @@
 import {
   createSignal,
   createMemo,
-  createEffect,
   onMount,
   Show,
 	onCleanup,
 } from 'solid-js';
-import { useParams, useNavigate, useSearchParams } from '@solidjs/router';
+import { useParams, useSearchParams } from '@solidjs/router';
 import { reader, setReader } from '../../../../shared/stores/readerStore';
 import { settings } from '../../../../shared/stores/settingsStore';
 import { scrollToTop } from '../../../../shared/utils/scroll';
@@ -21,8 +20,6 @@ import { useReadingPosition, createScrollSaveHandler } from '@/features/reader/h
 import { useNotesManager } from '@/features/reader/hooks/useNotesManager';
 import { useBookmarksManager } from '@/features/reader/hooks/useBookmarksManager';
 import { useAutoHideControls } from '@/features/reader/hooks/useAutoHideControls';
-import { useKeyboardShortcuts } from '@/features/reader/hooks/useKeyboardShortcuts';
-import { useFullscreen } from '@/features/reader/hooks/useFullscreen';
 import { ReaderContent } from '@/features/reader/components/ReaderContent';
 import { ReaderToolbar } from '@/features/reader/components/ReaderToolbar';
 import { ReaderFooter } from '@/features/reader/components/ReaderFooter';
@@ -30,18 +27,14 @@ import { ReaderNotePopup } from '@/features/reader/components/ReaderNotePopup';
 import { useSelection } from '@/shared/hooks/useSelection';
 import { GlassButton } from '@/shared/ui/GlassButton';
 import { Icon } from '@/shared/ui/Icon';
-import Modal from '@/shared/ui/Modal';
-import { toast } from 'solid-sonner';
+import { ReaderIframe } from '@/features/reader/components/ReaderIframe';
 
 export function ReaderPage() {
   const params = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
 
   const { book, isLoading, notes, loadBook, position, bookmarks } = useBookLoader();
-
-  const { savePosition, debouncedSavePosition } = useReadingPosition();
-
+  const { debouncedSavePosition } = useReadingPosition();
   const {
     nodeEditing,
     setNodeEditing,
@@ -50,43 +43,17 @@ export function ReaderPage() {
     closeNoteEditor,
     updateNotes,
   } = useNotesManager();
-
   const { handleAddBookmark,updateBookmarks, scrollToBookmark } = useBookmarksManager();
-
   const { showControls, setupAutoHide } = useAutoHideControls();
-
-  const { isFullscreen, toggleFullscreen } = useFullscreen();
-
-
-  const { setup: setupShortcuts } = useKeyboardShortcuts({
-		isChaptersMode: () => settings.reader.mode === 'chapters',
-		isTocOpen: () => showToc(),
-		isSettingsOpen: () => showSettings(),
-		isFullscreen: () => isFullscreen(),
-		onToggleToc: () => setShowToc(!showToc()),
-		onToggleSettings: () => setShowSettings(!showSettings()),
-		onToggleFullscreen: toggleFullscreen,
-		onAddNote: () =>
-			handleAddNote({
-				contentEl: contentRef!,
-				chapterId: currentChapter()?.id ?? '',
-			}),
-		onNavigateBack: () => navigate(`/book/${params.id}`),
-		onNextChapter: goToChapter.bind(null, reader.currentIndex + 1),
-		onPrevChapter: goToChapter.bind(null, reader.currentIndex - 1),
-	});
 
   const [showToc, setShowToc] = createSignal(false);
   const [showSettings, setShowSettings] = createSignal(false);
   const [toolPosition, setToolPosition] = createSignal<{x: number, y: number} | null>(null);
-	const [frame, setFrame] = createSignal<string | null>(null);
-
-  let contentRef: HTMLDivElement | undefined;
-
+	
   useSelection('.reader', {
-    onSelect: (range, selection) => {
-      if (!range) {
-        setToolPosition(null);
+		onSelect: (range, _) => {
+			if (!range) {
+				setToolPosition(null);
         return;
       };
       const position = range.getBoundingClientRect();
@@ -96,6 +63,8 @@ export function ReaderPage() {
 			});
     },
   });
+
+	let contentRef: HTMLDivElement | undefined;
 
   const sortedChapters = createMemo(() =>
     [...(book()?.chapters ?? [])].sort((a, b) => a.order - b.order),
@@ -110,14 +79,12 @@ export function ReaderPage() {
   const currentBookPath = createMemo(() => book()?.meta.path ?? '');
 
   const scrollSaveHandler = createScrollSaveHandler(
-			() => contentRef,
-			() => currentChapter()?.id ?? '',
-			currentBookPath,
-			() => settings.reader.mode,
-			debouncedSavePosition,
-		);
-
-
+		() => contentRef,
+		() => currentChapter()?.id ?? '',
+		currentBookPath,
+		() => settings.reader.mode,
+		debouncedSavePosition,
+	);
 
   onMount(async () => {
     await loadBook({
@@ -125,75 +92,13 @@ export function ReaderPage() {
       chapterId: searchParams.chapter as string | undefined,
       bookmarkId: searchParams.bookmark as string | undefined,
       contentEl: contentRef!,
-      navigate,
     });
 
-    setupShortcuts();
     setupAutoHide({ showToc, showSettings });
-
-		setTimeout(() => {
-			if (!contentRef) return;
-
-			const chapters = contentRef.querySelectorAll<HTMLElement>('.chapter');
-
-			const observer = new IntersectionObserver(
-				entries => {
-					let visibleChapter: HTMLElement | null = null;
-
-					for (const entry of entries) {
-						if (!entry.isIntersecting) continue;
-
-						visibleChapter = entry.target as HTMLElement;
-					}
-
-					if (!visibleChapter) return;
-
-					const chapterId = visibleChapter.dataset.chapterId;
-
-					if (!chapterId) return;
-
-					const index = sortedChapters().findIndex(c => c.id === chapterId);
-
-					if (index !== -1 && index !== reader.currentIndex) {
-						setReader('currentIndex', index);
-					}
-				},
-				{
-					root: contentRef,
-					rootMargin: '-45% 0px -45% 0px',
-					threshold: 0,
-				},
-			);
-
-			chapters.forEach(chapter => {
-				observer.observe(chapter);
-			});
-
-			onCleanup(() => observer.disconnect());
-		}, 300);
 
     const bookmarkId = searchParams.bookmark;
     const chapterId = searchParams.chapter;
     setTimeout(() => {
-			contentRef?.addEventListener('click', e => {
-				const target = e.target as HTMLElement;
-
-				const link = target.closest('a');
-
-				if (!link) return;
-
-				const href = link.getAttribute('href');
-
-				if (!href) return;
-
-				if (href.startsWith('#')) return;
-
-				e.preventDefault();
-				e.stopPropagation();
-
-				setFrame(href);
-			});
-
       const currentNotes = notes();
       const currentBookmarks = bookmarks();
 			const currentBook = book();
@@ -222,7 +127,6 @@ export function ReaderPage() {
     }, 300);
   });
 
-
 	function goToChapter(index: number) {
 		if (contentRef) {
 			debouncedSavePosition({
@@ -235,26 +139,15 @@ export function ReaderPage() {
 
 		if (settings.reader.mode === 'chapters') {
 			scrollToTop(contentRef!);
-		} else {
-			const chapterEl = document.getElementById(`chapter-${index}`);
-			chapterEl?.scrollIntoView({ behavior: 'smooth' });
-		}
+		} 
 
 		setShowToc(false);
 		setReader('currentIndex', index);
 	}
+
   return (
 			<div class='h-full w-full flex flex-col bg-background overflow-hidden'>
-				<Modal isOpen={!!frame()} onClose={() => setFrame(null)} size='lg'>
-					<iframe
-						src={frame() ?? ''}
-						class='w-full h-full border-0'
-						loading='eager'
-						onError={() => {
-							toast.error('Ошибка загрузки сайта');
-						}}
-					/>
-				</Modal>
+				<ReaderIframe contentRef={contentRef} />
 				<Show when={toolPosition()}>
 					<div
 						class='absolute flex top-0 left-0 bg-background/50 backdrop-blur-sm z-20 rounded-full overflow-hidden -translate-x-full'
@@ -300,7 +193,7 @@ export function ReaderPage() {
 						</GlassButton>
 					</div>
 				</Show>
-				{/* Note editor popup */}
+
 				<Show when={nodeEditing().visible}>
 					<ReaderNotePopup
 						nodeEditing={nodeEditing()}
@@ -331,11 +224,8 @@ export function ReaderPage() {
 						book={book()!}
 						hasMultipleChapters={hasMultipleChapters()}
 						showControls={showControls()}
-						isFullscreen={isFullscreen()}
-						onNavigateBack={() => navigate(`/book/${params.id}`)}
 						onToggleToc={() => setShowToc(!showToc())}
 						onToggleSettings={() => setShowSettings(!showSettings())}
-						onToggleFullscreen={toggleFullscreen}
 					/>
 
 					<div class='flex-1 flex overflow-hidden relative'>
@@ -350,16 +240,10 @@ export function ReaderPage() {
 
 						<ReaderContent
 							book={book()!}
-							currentIndex={() => reader.currentIndex}
 							contentRef={(el: HTMLDivElement | undefined) => {
 								contentRef = el;
 							}}
 							onScroll={scrollSaveHandler}
-							settings={{
-								columnWidth: settings.reader.column_width,
-								fontSize: settings.reader.font_size,
-								lineHeight: settings.reader.line_height,
-							}}
 						/>
 					</div>
 

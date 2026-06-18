@@ -1,8 +1,3 @@
-/**
- * Хук полноэкранного режима.
- * Вынесен из BookRead.tsx.
- */
-
 import { createSignal } from 'solid-js';
 
 export function useFullscreen() {

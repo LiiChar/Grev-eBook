@@ -10,6 +10,8 @@ use crate::{
     }, state::{ReaderState, SettingStore}
 };
 
+use html2text::from_read;
+
 /// ---------- reader ----------
 
 #[tauri::command]
@@ -51,7 +53,7 @@ pub async fn save_reading_position(
     position: ReadingPosition,
     chars: u64,
     mode: ReaderMode,
-) -> Result<(ReaderState, u64), String> {
+) -> Result<ReaderState, String> {
     log::info!("Command - reader: save_reading_position");
 
     let now = now_ts();
@@ -72,38 +74,21 @@ pub async fn save_reading_position(
             ReadingSession::new(book_path.clone(), position.clone(), mode.clone(), now)
         });
 
-    let mut chars_read_cone = 0;
-
     if let Some(book) = state
         .book
         .books
         .iter_mut()
         .find(|b| b.meta.path == book_path)
     {
+        let chars_read = chars.min(book.meta.chars_read.unwrap_or(0) as u64) as f32;
         book.meta.last_read_at = now as u64;
 
-        if let (Some(chapters), Some(current_chapter_id)) =
-            (&book.chapters, position.chapter_id.as_ref())
-        {
-            let mut chars_read = 0u64;
-
-            for chapter in chapters {
-                if chapter.id == *current_chapter_id {
-                    chars_read += chars as u64;
-                    break;
-                }
-
-                chars_read += chapter.html.chars().count() as u64;
-            }
-
-            chars_read_cone = chars_read;
-            book.meta.progress_read = Some(chars_read as f32);
-        }
+        book.meta.progress_read = Some(chars_read);
     }
 
     save_state(&store, &state).map_err(|e| e.to_string())?;
 
-    Ok((state.reader, chars_read_cone))
+    Ok(state.reader)
 }
 
 #[tauri::command]

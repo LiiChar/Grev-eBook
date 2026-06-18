@@ -112,8 +112,9 @@ body:has(.reader) .bottom-navbar {
   border-left: 3px solid hsl(var(--primary));
   padding: 0.5em 0.5em 0.5em 1em;
   margin: 1em 0 1em 0.5em;
-  background: hsl(var(--secondary));
+  background: hsl(var(--secondary)) !important; 
   border-radius: 0 hsl(var(--radius-sm)) hsl(var(--radius-sm)) 0;
+  color: hsl(var(--foreground)) !important;
 }
 
 .chapter blockquote p {
@@ -131,14 +132,18 @@ body:has(.reader) .bottom-navbar {
   font-style: italic;
 }
 
-.chapter .poem .stanza {
-    display: block;
-  border-left: 3px solid var(--primary);
-  padding: 0.5em 0 0.5em 0em;
-  margin: 1em 0 1em 0.5em;
-  background: var(--secondary);
-  line-height: 1.7em;
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+.chapter pre {
+  background: hsl(var(--secondary)) !important;
+}
+
+.chapter code {
+  background: hsl(var(--secondary)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.chapter pre code {
+  background: none !important;
+  color: hsl(var(--foreground)) !important;
 }
 
 /* Lists */
@@ -312,4 +317,186 @@ body:has(.reader) .bottom-navbar {
     oklch(0.85 0.12 340 / 0.35) 90%,
     transparent 100%
   );
+}
+
+.chapter .poem .stanza {
+    display: block;
+  border-left: 3px solid var(--primary);
+  padding: 0.5em 0 0.5em 0em;
+  margin: 1em 0 1em 0.5em;
+  background: var(--secondary);
+  line-height: 1.7em;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.chapter .poem {
+  margin: 1.5em 0;
+}
+
+.chapter .poem .stanza {
+  display: block;
+  border-left: 3px solid hsl(var(--primary));
+  padding: 0.75em 0 0.75em 1em;
+  margin: 1em 0;
+  background: hsl(var(--secondary));
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.chapter .poem .verse {
+  margin: 0;
+  padding: 0;
+  text-indent: 0 !important;
+  text-align: left !important;
+  line-height: 1.8;
+  hyphens: none;
+  white-space: pre-wrap;
+  font-style: italic;
+}
+
+.chapter blockquote .text-author a {
+  font-size: 0.8em;
+  vertical-align: super;
+  text-decoration: none;
+  color: hsl(var(--primary));
+}
+
+.chapter blockquote:has(.text-author) {
+  padding-top: 2em;
+}
+
+.chapter blockquote .text-author {
+  margin-top: 0em;
+  text-align: right;
+  font-style: normal;
+  opacity: 0.75;
+  font-size: 0.9em;
+  text-indent: 0 !important;
+}
+
+.chapter .poem .verse + .verse {
+  margin-top: 0.15em;
+}
+
+.chapter blockquote .poem {
+  margin: 0;
+}
+
+.chapter blockquote .poem .stanza {
+  border-left: 3px solid var(--primary);
+  padding: 0.5em 0 0.5em 1em;
+  margin: 0.8em 0;
+  background: var(--secondary);
+  line-height: 1.7em;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* Отступ между строфами */
+.chapter .stanza + .stanza {
+  margin-top: 1.2em;
+}
+
+/* Ссылки-сноски внутри стихов */
+.chapter:not(:has(blockquote > .poem > .verse)) .poem .verse a {
+  font-style: normal;
+  text-decoration: none;
+  margin-left: 0.15em;
+  vertical-align: super;
+  font-size: 0.8em;
+}
+
+.chapter .scene,
+.chapter .chapter-break {
+  margin: 2em 0;
+  text-align: center;
+  color: hsl(var(--foreground));
+  opacity: 0.6;
+}
+
+.chapter .scene::before {
+  content: "***";
+  letter-spacing: 0.3em;
+}
+
+.chapter .epigraph {
+  margin: 2em 0;
+  padding-left: 2em;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.chapter .epigraph .author {
+  margin-top: 0.5em;
+  text-align: right;
+  font-style: normal;
+  opacity: 0.7;
+}
+
+.chapter .footnotes {
+  margin-top: 2em;
+  padding-top: 1em;
+  border-top: 1px solid hsl(var(--border));
+  font-size: 0.85em;
+  opacity: 0.85;
+}
+
+.chapter .footnotes p {
+  text-indent: 0;
+  margin-bottom: 0.5em;
+}
+
+.chapter .footnote-ref {
+  font-size: 0.75em;
+  vertical-align: super;
+  text-decoration: none;
+  color: hsl(var(--primary));
+}
+
+.chapter .footnote-ref:hover {
+  text-decoration: underline;
+}
+
+.chapter .dialogue {
+  text-indent: -1em;
+  padding-left: 1em;
+  margin: 0.3em 0;
+}
+
+.chapter .dialogue {
+  font-style: normal;
+  text-align: left;
+}
+
+.chapter .section-title {
+  text-align: center;
+  margin: 2em 0 1em;
+  font-size: 1.2em;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  opacity: 0.9;
+}
+
+.chapter .quote {
+  margin: 1em 0;
+  padding-left: 1em;
+  border-left: 2px solid hsl(var(--primary));
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.chapter .note {
+  font-size: 0.85em;
+  opacity: 0.75;
+  font-style: italic;
+}
+
+.chapter .divider {
+  border: none;
+  text-align: center;
+  margin: 2em 0;
+}
+
+.chapter .divider::before {
+  content: "✦ ✦ ✦";
+  letter-spacing: 0.5em;
+  opacity: 0.4;
 }

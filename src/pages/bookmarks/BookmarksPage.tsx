@@ -137,7 +137,7 @@ export function BookmarksPage() {
 				{/* Header */}
 				<header class='shrink-0 px-4 py-2 border-b border-border'>
 					<div class='flex items-center justify-between gap-4'>
-						<div class='flex gap-1 bg-secondary rounded-lg w-fit p-1 h-full'>
+						<div class='flex gap-0.5 bg-secondary rounded-lg w-fit p-0.5 h-full'>
 							<button
 								onClick={() => setActiveTab('bookmarks')}
 								class={`

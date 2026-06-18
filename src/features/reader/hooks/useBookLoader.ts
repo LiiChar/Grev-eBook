@@ -28,7 +28,6 @@ export interface UseBookLoaderReturn {
 		chapterId?: string;
 		bookmarkId?: string;
 		contentEl: HTMLDivElement;
-		navigate: (path: string) => void;
 	}) => Promise<void>;
 	position: () => ReadingPosition | null;
 }
@@ -47,9 +46,8 @@ export function useBookLoader(): UseBookLoaderReturn {
 		chapterId?: string;
 		bookmarkId?: string;
 		contentEl: HTMLDivElement;
-		navigate: (path: string) => void;
 	}): Promise<void> {
-		const { bookId, contentEl, navigate } = options;
+		const { bookId, contentEl } = options;
 
 		contentRef = contentEl;
 
@@ -125,7 +123,6 @@ export function useBookLoader(): UseBookLoaderReturn {
 		} catch (err) {
 			console.error('Failed to load book:', err);
 			toast.error('Не удалось загрузить книгу');
-			navigate('/');
 		} finally {
 			// выключаем loader максимально рано
 			setIsLoading(false);

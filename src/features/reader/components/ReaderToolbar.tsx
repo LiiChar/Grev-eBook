@@ -1,28 +1,29 @@
 import { createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { GlassButton } from '../../../shared/ui/GlassButton';
 import { Icon } from '../../../shared/ui/Icon';
-import { setReaderMode, settings } from '@/shared/stores/settingsStore';
+import { settings } from '@/shared/stores/settingsStore';
 import { useTTS } from '@/shared/hooks/useTTS';
 import { Play, Pause, Scroll } from 'lucide-solid';
 import { useAutoScroll } from '@/shared/hooks/useAutoScroll';
 import { reader, setReader } from '@/shared/stores/readerStore';
 import { scrollToTop } from '@/shared/utils/scroll';
-import { getReadingPosition } from '@/shared/api/reader';
 import { stripHtml } from '@/shared/utils/html';
 import { Book } from '@/shared/types/book';
+import { useNavigate } from '@solidjs/router';
 
 export interface ReaderToolbarProps {
 	book: Book,
   hasMultipleChapters: boolean;
   showControls: boolean;
-  isFullscreen: boolean;
-  onNavigateBack: () => void;
   onToggleToc: () => void;
   onToggleSettings: () => void;
-  onToggleFullscreen: () => void;
 }
 
 export function ReaderToolbar(props: ReaderToolbarProps) {
+		const navigate = useNavigate();
+
+  // const { isFullscreen, toggleFullscreen } = useFullscreen();
+
 
 	const {play, playing, pause, progress} = useTTS({target: '.reader', autoplay: reader.autoplay});
 	const { startScroll, stopScroll, scrolling } = useAutoScroll(
@@ -83,7 +84,7 @@ export function ReaderToolbar(props: ReaderToolbarProps) {
 				{/* Left */}
 				<GlassButton
 					class='rounded-lg! px-0! reader-control sm:aspect-auto aspect-square '
-					onClick={props.onNavigateBack}
+					onClick={() => navigate(`/book/${props.book.id}`)}
 				>
 					<div class='flex items-center gap-2  rounded-lg p-0 sm:px-2 sm:pr-4 sm:px-2 '>
 						<Icon name='chevronLeft' size={18} class='-ml-0.5' />

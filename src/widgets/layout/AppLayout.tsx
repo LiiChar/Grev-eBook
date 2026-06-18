@@ -1,13 +1,31 @@
-import { JSX, onMount } from 'solid-js';
+import { JSX, onCleanup, onMount } from 'solid-js';
 import { loadSettings } from '../../shared/stores/settingsStore';
 import { Toaster } from '../../shared/ui/Toaster';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
-
+import { useNavigate } from '@solidjs/router';
 export function AppLayout(props: { children?: JSX.Element }) {
+
+	const navigate = useNavigate();
+	  function handleKeyDown(e: KeyboardEvent) {
+
+
+    switch (e.code) {
+      case 'KeyM':
+        e.preventDefault();
+				navigate("/")
+        break;
+    }
+  }
 
   onMount(async () => {
     await loadSettings();
+
+				document.addEventListener('keydown', handleKeyDown);
+		
+				onCleanup(() => {
+					document.removeEventListener('keydown', handleKeyDown);
+				});
   });
 
   return (

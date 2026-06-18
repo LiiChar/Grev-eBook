@@ -215,6 +215,13 @@ const icons = {
 			d='M3.75 9h16.5m-16.5 6.75h16.5'
 		/>
 	),
+	grid: () => (
+		<>
+			<path d='M12 3v18' />
+			<path d='M3 12h18' />
+			<rect x='3' y='3' width='18' height='18' rx='2' />
+		</>
+	),
 	adjustments: () => (
 		<path
 			stroke-linecap='round'

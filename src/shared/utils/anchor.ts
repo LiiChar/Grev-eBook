@@ -77,6 +77,39 @@ export function getReadingAnchor(
 	// =====================================
 	// 2️⃣ центр экрана
 	// =====================================
+	// =====================================
+	// 2️⃣ центр экрана / конец главы
+	// =====================================
+
+	const isNearBottom =
+		root.scrollTop + root.clientHeight >= root.scrollHeight - 50;
+
+	// Если дочитали до конца главы
+	if (isNearBottom) {
+		const walker = createWalker();
+
+		let lastNode: Text | null = null;
+
+		while (walker.nextNode()) {
+			lastNode = walker.currentNode as Text;
+			acc += countNode(lastNode);
+		}
+
+		if (lastNode) {
+			const text = lastNode.textContent!.replace(/\s+/g, ' ').trim();
+
+			return [
+				{
+					chapter_id: chapterId,
+					anchor_text: text.slice(-80),
+					before: text.slice(-80, -40),
+					after: text.slice(-40),
+				},
+				acc,
+			];
+		}
+	}
+
 	const walker = createWalker();
 	const centerY = root.scrollTop + root.clientHeight / 2;
 

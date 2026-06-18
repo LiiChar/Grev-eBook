@@ -43,7 +43,7 @@ export const MobileNav = () => {
 							onClick={() => navigate(item.path)}
 							class={`
 							flex flex-col items-center justify-center gap-0.5 aspect-square rounded-full
-							min-w-12 p-4
+							min-w-12 p-1
 							transition-all duration-150
 							hover:bg-primary/10
 							${

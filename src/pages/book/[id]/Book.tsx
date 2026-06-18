@@ -140,17 +140,19 @@ const getReadTimeChars = (book: Book) => {
 				<Show when={!isLoading() && book()}>
 					<div class='max-w-5xl mx-auto relative'>
 						{/* Back button */}
-						<header data-tauri-drag-region class=' h-8 sticky top-4 z-1'>
-							<button
-								onClick={() => navigate('/')}
-								class='flex items-center gap-2 ml-4 mt-4 text-muted-foreground border hover:border-foreground/40 border-border hover:text-foreground p-2 rounded-full backdrop-blur-lg transition-colors '
-							>
-								<Icon name='chevronLeft' size={18} class='-ml-0.5' />
-							</button>
-						</header>
+						<button
+							onClick={() => navigate('/')}
+							class='fixed top-2 ml-2 flex items-center gap-2 text-muted-foreground border bg-background/60 hover:border-foreground/40 border-border hover:text-foreground p-2 rounded-full backdrop-blur-lg transition-colors  z-20'
+						>
+							<Icon name='chevronLeft' size={18} class='-ml-0.5' />
+						</button>
+						<header
+							data-tauri-drag-region
+							class=' h-6 fixed top-0 w-full z-10'
+						></header>
 
 						{/* Main info */}
-						<div class='grid mt-6 grid-cols-1 md:grid-cols-3 gap-8 pl-6 pr-6'>
+						<div class='grid mt-6 grid-cols-1 md:grid-cols-3 gap-8 pl-6 pr-6 pt-8'>
 							{/* Cover */}
 							<div class='md:col-span-1'>
 								<div class='overflow-hidden max-h-[50vh] h-full w-full flex justify-center items-center'>
@@ -219,16 +221,30 @@ const getReadTimeChars = (book: Book) => {
 														{book()!.meta.language}
 													</div>
 												</Show>
+												<Show
+													when={
+														book() &&
+														((book()!.meta.progress_read ?? 0) /
+															(book()!.meta.chars_read ?? 0)) *
+															100 >
+															0
+													}
+												>
+													<div class='px-3 py-1.5 rounded-full text-xs font-medium bg-secondary border border-border text-secondary-foreground backdrop-blur-sm'>
+														{(
+															((book()!.meta.progress_read ?? 0) /
+																(book()!.meta.chars_read ?? 0)) *
+															100
+														).toFixed(2)}
+														%
+													</div>
+												</Show>
 											</div>
 										</div>
 									</Show>
 								</div>
 
-								{/* Meta badges */}
 								<div class='space-y-3'>
-									{/* badges */}
-
-									{/* info */}
 									<div class='grid grid-cols-2 sm:grid-cols-3 gap-1 text-sm'>
 										<div class='rounded-2xl bg-secondary border border-border p-2 group'>
 											<div class='text-muted-foreground text-xs mb-1'>Уникальный ID</div>
@@ -256,7 +272,9 @@ const getReadTimeChars = (book: Book) => {
 
 										<div class='rounded-2xl bg-secondary border border-border p-2'>
 											<div class='text-muted-foreground text-xs mb-1'>Время чтения</div>
-											<div>{formattedTimeText(timeRead(getReadTimeChars(book()!)), 'm')}</div>
+											<div>
+												{formattedTimeText(timeRead(getReadTimeChars(book()!)), 'm')}
+											</div>
 										</div>
 										<div class='rounded-2xl bg-secondary border border-border p-2'>
 											<div class='text-muted-foreground text-xs mb-1'>Размер</div>

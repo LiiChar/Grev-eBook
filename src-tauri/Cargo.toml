@@ -54,6 +54,8 @@ scraper = "0.27.0"
 natord = "1.0.9"
 rtf-parser = "0.4.2"
 jni = "0.22.4"
+hex = "0.4.3"
+html2text = "0.17.1"
 [target.'cfg(not(target_os = "android"))'.dependencies]
 mupdf = "0.6.0"
 
